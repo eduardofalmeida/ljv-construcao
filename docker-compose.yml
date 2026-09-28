@@ -1,0 +1,40 @@
+version: '3.9'
+
+services:
+
+  # ─── PostgreSQL ───────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: ljv-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ljv_construcao
+      POSTGRES_USER: ljv_user
+      POSTGRES_PASSWORD: ljv_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ljv_user -d ljv_construcao"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── Backend (opcional — pode rodar com mvn spring-boot:run) ──
+  # backend:
+  #   build: ./backend
+  #   container_name: ljv-backend
+  #   restart: unless-stopped
+  #   environment:
+  #     SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ljv_construcao
+  #     SPRING_DATASOURCE_USERNAME: ljv_user
+  #     SPRING_DATASOURCE_PASSWORD: ljv_pass
+  #   ports:
+  #     - "8080:8080"
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+
+volumes:
+  pgdata:
