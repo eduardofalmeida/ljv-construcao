@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import axios from 'axios'
 import { maskPhone } from '../utils/masks'
+import { apiBaseUrl } from '../services/api'
 
 interface DepoimentoAPI {
   id: number
@@ -149,8 +150,9 @@ export default function LandingPage() {
   const [mostrarFormDep, setMostrarFormDep] = useState(false)
 
   useEffect(() => {
-    axios.get('/api/config/site').then(r => setConfig(r.data)).catch(() => {})
-    axios.get('/api/depoimentos/aprovados')
+    const base = apiBaseUrl()
+    axios.get(`${base}/config/site`).then(r => setConfig(r.data)).catch(() => {})
+    axios.get(`${base}/depoimentos/aprovados`)
       .then(r => setDepoimentos(r.data))
       .catch(() => setDepoimentos([]))
     const onScroll = () => setScrolled(window.scrollY > 40)
@@ -163,7 +165,7 @@ export default function LandingPage() {
     if (!formDep.nome.trim() || !formDep.texto.trim()) return
     setEnviandoDep(true)
     try {
-      await axios.post('/api/depoimentos', formDep)
+      await axios.post(`${apiBaseUrl()}/depoimentos`, formDep)
       setDepEnviado(true)
       setFormDep({ nome: '', cidade: '', cargo: '', texto: '', estrelas: 5 })
     } catch {

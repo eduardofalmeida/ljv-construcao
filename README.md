@@ -150,15 +150,33 @@ A identidade visual da LJV Construção foi desenvolvida com:
 
 ---
 
-## Variáveis de ambiente (produção futura)
+## Variáveis de ambiente (Railway)
 
-```properties
-# application-prod.properties
-spring.datasource.url=jdbc:postgresql://SEU_HOST:5432/ljv_construcao
-spring.datasource.username=SEU_USUARIO
-spring.datasource.password=SUA_SENHA
-app.dev.seed-data=false
-```
+O backend lê Postgres, porta, CORS e seed por variáveis de ambiente.
+Exemplos prontos: `backend/railway.env.example` e `frontend/.env.example`.
+
+### Serviço Backend
+
+| Variável | Exemplo / referência |
+|----------|----------------------|
+| `SPRING_DATASOURCE_URL` | `jdbc:postgresql://${{Postgres.PGHOST}}:${{Postgres.PGPORT}}/${{Postgres.PGDATABASE}}` |
+| `SPRING_DATASOURCE_USERNAME` | `${{Postgres.PGUSER}}` |
+| `SPRING_DATASOURCE_PASSWORD` | `${{Postgres.PGPASSWORD}}` |
+| `APP_CORS_ALLOWED_ORIGINS` | `https://seu-frontend.up.railway.app` |
+| `SESSION_COOKIE_SAME_SITE` | `none` (frontend em outro domínio) |
+| `SESSION_COOKIE_SECURE` | `true` |
+| `APP_DEV_SEED_DATA` | `false` |
+| `PORT` | injetado pelo Railway |
+
+Use **Add Variable Reference** no Railway para ligar o Postgres ao backend (não copie senha na mão).
+
+### Serviço Frontend
+
+| Variável | Exemplo |
+|----------|---------|
+| `VITE_API_URL` | `https://seu-backend.up.railway.app/api` |
+
+`VITE_API_URL` precisa estar definida **no build** do frontend.
 
 ---
 

@@ -61,7 +61,7 @@ const MOV_CONFIG: Record<TipoMovimentacao, { label: string; cor: string; bg: str
   DESCONTO:  { label: 'Desconto',  cor: 'bg-red-500',    bg: 'bg-red-50 border-red-200',          text: 'text-red-700',    icon: <MinusCircle size={14} /> },
 }
 
-function fmt(v: number) {
+function fmt(v?: number | null) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(v) || 0)
 }
 function fmtData(d: string) {

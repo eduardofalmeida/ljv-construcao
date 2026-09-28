@@ -1,7 +1,13 @@
 import axios from 'axios'
 
+/** Em produção (Railway), defina VITE_API_URL=https://seu-backend.up.railway.app/api no build. */
+const rawBase = (import.meta.env.VITE_API_URL as string | undefined)?.trim()
+const baseURL = rawBase && rawBase.length > 0
+  ? rawBase.replace(/\/$/, '')
+  : '/api'
+
 const api = axios.create({
-  baseURL: '/api',
+  baseURL,
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
@@ -23,3 +29,8 @@ api.interceptors.response.use(
 )
 
 export default api
+
+/** Base da API para chamadas fora do cliente axios (ex.: landing com axios direto). */
+export function apiBaseUrl() {
+  return baseURL
+}
