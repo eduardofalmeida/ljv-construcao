@@ -159,9 +159,14 @@ Exemplos prontos: `backend/railway.env.example` e `frontend/.env.example`.
 
 | Variável | Exemplo / referência |
 |----------|----------------------|
-| `SPRING_DATASOURCE_URL` | `jdbc:postgresql://${{Postgres.PGHOST}}:${{Postgres.PGPORT}}/${{Postgres.PGDATABASE}}` |
-| `SPRING_DATASOURCE_USERNAME` | `${{Postgres.PGUSER}}` |
-| `SPRING_DATASOURCE_PASSWORD` | `${{Postgres.PGPASSWORD}}` |
+| `PGHOST` | `${{Postgres.PGHOST}}` |
+| `PGPORT` | `${{Postgres.PGPORT}}` |
+| `PGDATABASE` | `${{Postgres.PGDATABASE}}` |
+| `PGUSER` | `${{Postgres.PGUSER}}` |
+| `PGPASSWORD` | `${{Postgres.PGPASSWORD}}` |
+| `POSTGRES_DB` | `${{Postgres.POSTGRES_DB}}` |
+| `POSTGRES_USER` | `${{Postgres.POSTGRES_USER}}` |
+| `POSTGRES_PASSWORD` | `${{Postgres.POSTGRES_PASSWORD}}` |
 | `APP_CORS_ALLOWED_ORIGINS` | `https://seu-frontend.up.railway.app` |
 | `SESSION_COOKIE_SAME_SITE` | `none` (frontend em outro domínio) |
 | `SESSION_COOKIE_SECURE` | `true` |
