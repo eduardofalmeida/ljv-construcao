@@ -5,6 +5,18 @@ const railwayPort = Number(process.env.PORT) || undefined
 
 export default defineConfig({
   plugins: [react()],
+  optimizeDeps: {
+    include: ['three', '@react-three/fiber', '@react-three/drei'],
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/three') || id.includes('node_modules/@react-three')) return 'cena'
+        },
+      },
+    },
+  },
   server: {
     host: '0.0.0.0',
     port: railwayPort || 5173,

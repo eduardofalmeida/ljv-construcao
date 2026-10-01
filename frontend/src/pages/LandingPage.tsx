@@ -1,14 +1,68 @@
-import { useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import {
-  ArrowRight, Lock, Phone, Mail, MapPin, ChevronDown,
-  Home, Building2, Hammer, Layers, PaintbrushIcon, ClipboardList,
-  ShieldCheck, Clock3, Award, Users, Star, CheckCircle, Menu, X as XIcon,
-  MessageSquarePlus, Send, ThumbsUp
-} from 'lucide-react'
+import { Lock, Menu, Star, X } from 'lucide-react'
 import axios from 'axios'
 import { maskPhone } from '../utils/masks'
 import { apiBaseUrl } from '../services/api'
+import { MENSAGENS, linkWhatsApp, openWhatsApp } from '../config/contatoLjv'
+import { detectarQualidade, type Qualidade } from '../landing/qualidade'
+import { ponteiro } from '../landing/ponteiro'
+import { HOTSPOTS } from '../landing/hotspots'
+import MaqueteEstatica from '../landing/MaqueteEstatica'
+import LimiteCena from '../landing/LimiteCena'
+
+const HeroCena = lazy(() => import('../landing/HeroCena'))
+const NarrativaCena = lazy(() => import('../landing/NarrativaCena'))
+const ModeloInterativo = lazy(() => import('../landing/ModeloInterativo'))
+const CtaCena = lazy(() => import('../landing/CtaCena'))
+
+const FASES = [
+  { ate: 0.16, nome: 'Projeto', texto: 'Linhas, medidas e a intenção do volume.' },
+  { ate: 0.36, nome: 'Planejamento', texto: 'A fundação entra primeiro. A ordem do trabalho aparece.' },
+  { ate: 0.56, nome: 'Estrutura', texto: 'Pilares e vigas sustentam o que ainda vai fechar.' },
+  { ate: 0.78, nome: 'Execução', texto: 'Paredes, vidro e os planos da arquitetura.' },
+  { ate: 1.01, nome: 'Entrega', texto: 'O volume completo — ainda uma maquete conceitual.' },
+]
+
+const SERVICOS = [
+  { n: '01', titulo: 'Construção residencial', texto: 'Casas conduzidas com escopo, etapas e acabamento no mesmo critério.' },
+  { n: '02', titulo: 'Construção comercial', texto: 'Espaços de trabalho organizados para funcionar no dia a dia.' },
+  { n: '03', titulo: 'Gerenciamento', texto: 'Equipe, compras e decisões sob uma coordenação só.' },
+  { n: '04', titulo: 'Reformas', texto: 'Ampliação e renovação com a interferência combinada antes.' },
+  { n: '05', titulo: 'Planejamento', texto: 'O que será feito, em que ordem e com qual proposta.' },
+  { n: '06', titulo: 'Acompanhamento', texto: 'Presença e registro ao longo da execução.' },
+]
+
+const DIFERENCIAIS = [
+  { n: '01', titulo: 'Atendimento próximo', texto: 'Conversa direta, sem fila de intermediários.' },
+  { n: '02', titulo: 'Planejamento', texto: 'A ordem do trabalho definida antes do canteiro.' },
+  { n: '03', titulo: 'Transparência', texto: 'O que foi feito e o que vem a seguir, em linguagem clara.' },
+  { n: '04', titulo: 'Organização', texto: 'Canteiro, compras e equipe no mesmo ritmo.' },
+  { n: '05', titulo: 'Acompanhamento', texto: 'A obra não fica sem quem responda por ela.' },
+  { n: '06', titulo: 'Compromisso com a qualidade', texto: 'Acabamento conferido, não só prometido.' },
+]
+
+const PROCESSO = [
+  { n: '01', titulo: 'Entendimento', texto: 'O que você quer construir, em que condição e com qual prioridade.' },
+  { n: '02', titulo: 'Planejamento', texto: 'As etapas necessárias, na ordem em que a obra pede.' },
+  { n: '03', titulo: 'Orçamento', texto: 'Uma proposta clara, antes de começar.' },
+  { n: '04', titulo: 'Execução', texto: 'Coordenação do que foi combinado.' },
+  { n: '05', titulo: 'Acompanhamento', texto: 'Presença ao longo das etapas.' },
+  { n: '06', titulo: 'Entrega', texto: 'Fechamento com atenção aos detalhes.' },
+]
+
+const NAV = [
+  { href: '#topo', label: 'Início' },
+  { href: '#sobre', label: 'Sobre' },
+  { href: '#servicos', label: 'Serviços' },
+  { href: '#processo', label: 'Processo' },
+  { href: '#contato', label: 'Contato' },
+]
+
+const SEED_IGNORAR: Record<string, string> = {
+  contato_telefone: '(11) 9 9999-9999',
+  contato_endereco: 'São Paulo, SP — Brasil',
+}
 
 interface DepoimentoAPI {
   id: number
@@ -19,135 +73,144 @@ interface DepoimentoAPI {
   estrelas: number
 }
 
-type Config = Record<string, string>
-
-// ─── Hooks ────────────────────────────────────────────────────
-function useReveal(threshold = 0.1) {
+function useReveal() {
   const ref = useRef<HTMLDivElement>(null)
-  const [visible, setVisible] = useState(false)
+  const [visivel, setVisivel] = useState(false)
   useEffect(() => {
-    const el = ref.current; if (!el) return
-    const obs = new IntersectionObserver(
-      ([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect() } },
-      { threshold }
-    )
+    const el = ref.current
+    if (!el) return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setVisivel(true)
+      return
+    }
+    const obs = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) {
+        setVisivel(true)
+        obs.disconnect()
+      }
+    }, { threshold: 0.2 })
     obs.observe(el)
     return () => obs.disconnect()
-  }, [threshold])
-  return { ref, visible }
+  }, [])
+  return { ref, visivel }
 }
 
-function useCounter(end: number, duration = 1800, active = false) {
-  const [count, setCount] = useState(0)
-  useEffect(() => {
-    if (!active) return
-    let t0: number | null = null
-    const step = (ts: number) => {
-      if (!t0) t0 = ts
-      const p = Math.min((ts - t0) / duration, 1)
-      const ease = 1 - Math.pow(1 - p, 3)
-      setCount(Math.floor(ease * end))
-      if (p < 1) requestAnimationFrame(step); else setCount(end)
-    }
-    requestAnimationFrame(step)
-  }, [end, duration, active])
-  return count
-}
-
-// ─── Logo ─────────────────────────────────────────────────────
-function Logo({ white = true, logo, nome, slogan }: { white?: boolean; logo?: string; nome?: string; slogan?: string }) {
-  const n = nome || 'LJV'
-  const s = slogan || 'Construção'
+function Zap({
+  mensagem,
+  className,
+  children,
+  onMouseEnter,
+  onMouseLeave,
+}: {
+  mensagem: string
+  className?: string
+  children: React.ReactNode
+  onMouseEnter?: () => void
+  onMouseLeave?: () => void
+}) {
   return (
-    <div className="flex items-center gap-2.5 select-none">
-      {logo ? (
-        <img src={logo} alt={n} className="w-9 h-9 rounded-lg object-cover bg-white" />
-      ) : (
-        <div className={`w-9 h-9 rounded-lg flex items-center justify-center font-black text-lg ${white ? 'bg-accent-400 text-stone-950' : 'bg-stone-950 text-accent-400'}`}>
-          {n.charAt(0).toUpperCase()}
-        </div>
-      )}
-      <div>
-        <div className={`font-black text-base leading-none tracking-tight ${white ? 'text-white' : 'text-stone-950'}`}>{n}</div>
-        <div className={`text-[9px] uppercase tracking-[0.2em] leading-none mt-0.5 ${white ? 'text-stone-400' : 'text-stone-500'}`}>{s}</div>
-      </div>
+    <a
+      className={className}
+      href={linkWhatsApp(mensagem)}
+      target="_blank"
+      rel="noopener noreferrer"
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+      onClick={e => {
+        e.preventDefault()
+        openWhatsApp(mensagem)
+      }}
+    >
+      {children}
+    </a>
+  )
+}
+
+function IconeWhats() {
+  return (
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+      <path fill="currentColor" d="M20.5 3.5A11 11 0 0 0 2.1 17.8L1 23l5.3-1.1A11 11 0 0 0 12 23a11 11 0 0 0 8.5-19.5zM12 21a9 9 0 0 1-4.6-1.3l-.3-.2-3.2.8.8-3.1-.2-.3A9 9 0 1 1 12 21zm5-6.7c-.3-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.6.1a7.4 7.4 0 0 1-2.2-1.4 8 8 0 0 1-1.5-1.9c-.2-.3 0-.4.1-.6l.4-.5.2-.3a.5.5 0 0 0 0-.5c-.1-.1-.6-1.4-.8-1.9s-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-1 2.2 5.2 5.2 0 0 0 1.1 2.7 12 12 0 0 0 4.5 4 15 15 0 0 0 1.5.5 3.6 3.6 0 0 0 1.7.1 2.7 2.7 0 0 0 1.8-1.2 2.2 2.2 0 0 0 .2-1.2c-.1-.1-.3-.2-.6-.3z" />
+    </svg>
+  )
+}
+
+function Marca({ nome, src = '/images/logo-ljv.png' }: { nome: string; src?: string }) {
+  return <img src={src} alt={nome} className="lp-logo" />
+}
+
+function Ponte() {
+  const { ref, visivel } = useReveal()
+  return (
+    <div ref={ref} className={`lp-bridge${visivel ? ' is-in' : ''}`} aria-hidden="true">
+      <span /><span /><span />
     </div>
   )
 }
 
-// ─── Counter animado ──────────────────────────────────────────
-function StatNumber({ value, suffix, label, active }: { value: number; suffix?: string; label: string; active: boolean }) {
-  const n = useCounter(value, 2000, active)
+function Desenho({ i }: { i: number }) {
+  const tracos = [
+    'M20 150 H280 M40 150 V40 H150 V90 H250 V150 M40 40 L95 18 H150',
+    'M30 150 H270 M50 150 V50 H250 V150 M50 90 H250 M120 50 V150 M190 50 V150',
+    'M40 30 V160 M40 30 H260 M80 30 V160 M140 30 V160 M200 30 V160 M40 70 H260 M40 110 H260',
+    'M30 150 H270 M48 150 V70 H130 V150 M150 150 V48 H250 V150 M168 70 H232 V112 H168 Z',
+    'M24 40 H300 M24 40 V24 M24 40 H48 M60 150 V55 M120 150 V40 M200 150 V70 M260 150 V48 M60 150 H260',
+    'M40 150 H270 M40 150 V45 H270 V150 M40 80 H270 M90 80 V150 M160 80 V150 M220 80 V150 M70 58 H120',
+  ]
   return (
-      <div className="text-center px-1 sm:px-4">
-      <div className="text-3xl sm:text-4xl md:text-5xl font-black text-white tabular-nums leading-none">
-        {n}<span className="text-accent-400">{suffix}</span>
-      </div>
-      <div className="text-stone-400 text-sm mt-3 font-medium leading-snug">{label}</div>
-    </div>
+    <svg viewBox="0 0 320 180" className="lp-desenho" aria-hidden="true">
+      <path d={tracos[i]} fill="none" stroke="currentColor" strokeWidth="1.15" />
+      <path d="M16 16 H36 M16 16 V36 M304 16 H284 M304 16 V36 M16 164 H36 M16 164 V144 M304 164 H284 M304 164 V144" fill="none" stroke="#e36a1e" strokeWidth="1" />
+    </svg>
   )
 }
 
-// ─── Dados estáticos ──────────────────────────────────────────
-const SERVICOS = [
-  { icon: Home, titulo: 'Construção Residencial', desc: 'Casas e sobrados do zero, com projeto personalizado, materiais de qualidade e entrega no prazo garantida.', cor: 'bg-blue-500' },
-  { icon: Building2, titulo: 'Obras Comerciais', desc: 'Escritórios, lojas, clínicas e galpões. Espaços funcionais que valorizam a identidade do seu negócio.', cor: 'bg-violet-500' },
-  { icon: Hammer, titulo: 'Reformas & Renovações', desc: 'Ampliação, remodelação ou modernização. Transformamos qualquer espaço com planejamento e acabamento impecável.', cor: 'bg-accent-500' },
-  { icon: Layers, titulo: 'Fundações & Estruturas', desc: 'Alvenaria estrutural, concreto armado e fundações seguras. A base certa para cada tipo de construção.', cor: 'bg-emerald-600' },
-  { icon: PaintbrushIcon, titulo: 'Acabamento & Pintura', desc: 'Revestimentos, pisos, pintura e detalhes que fazem a diferença. Entregamos espaços prontos para morar.', cor: 'bg-rose-500' },
-  { icon: ClipboardList, titulo: 'Gestão de Obras', desc: 'Gerenciamento completo: orçamento, cronograma, equipe e relatórios semanais. Você acompanha tudo.', cor: 'bg-orange-500' },
-]
-
-const DIFERENCIAIS = [
-  {
-    icon: ShieldCheck,
-    titulo: 'Licenciada e Segurada',
-    desc: 'Empresa registrada no CREA com todas as documentações em dia, seguro de responsabilidade civil e garantia em escritura.',
-  },
-  {
-    icon: Clock3,
-    titulo: 'Prazo Cumprido',
-    desc: 'Cronograma detalhado desde o primeiro dia. Multa contratual em caso de atraso — porque seu tempo tem valor.',
-  },
-  {
-    icon: Award,
-    titulo: 'Qualidade Documentada',
-    desc: 'Relatórios semanais com fotos, ART emitida por engenheiro responsável e vistoria final com laudo técnico.',
-  },
-]
-
-const PROCESSO = [
-  { n: '01', titulo: 'Visita e Diagnóstico', desc: 'Nossa equipe visita o local sem custo. Analisamos o terreno, a planta e entendemos exatamente o que você precisa.' },
-  { n: '02', titulo: 'Proposta Detalhada', desc: 'Orçamento claro e transparente: mão de obra, materiais, cronograma e condições de pagamento sem letras miúdas.' },
-  { n: '03', titulo: 'Execução com Supervisão', desc: 'Equipe própria treinada, mestre de obras presencial e engenheiro responsável. Você recebe atualizações semanais.' },
-  { n: '04', titulo: 'Entrega com Garantia', desc: 'Vistoria final completa, manual da obra entregue e garantia de 5 anos na estrutura, documentada em contrato.' },
-]
-
-const DEPOIMENTOS_FALLBACK = [
-  { id: 0, nome: 'Carlos Mendes', cidade: 'São Paulo, SP', cargo: 'Proprietário', texto: 'Construímos nossa casa com a LJV e foi uma experiência incrível. Cumpriram cada prazo, o acabamento foi perfeito e sempre estavam disponíveis para tirar dúvidas. Recomendo com os olhos fechados.', estrelas: 5 },
-  { id: 0, nome: 'Ana Paula Ribeiro', cidade: 'Santo André, SP', cargo: 'Clínica médica', texto: 'Fizemos uma reforma completa na nossa clínica. Profissionalismo do começo ao fim — obra limpa, comunicação excelente e o resultado ficou muito acima do esperado.', estrelas: 5 },
-  { id: 0, nome: 'Roberto Silva', cidade: 'São Bernardo, SP', cargo: 'Empresário', texto: 'Já é a segunda obra com a LJV. A primeira foi um galpão e agora uma residência. Equipe séria, preço justo e entrega garantida. Empresa de confiança de verdade.', estrelas: 5 },
-]
-
-// ─── Componentes utilitários ──────────────────────────────────
-function SectionTag({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="inline-flex items-center gap-2 text-xs font-bold text-accent-500 uppercase tracking-[0.2em]">
-      <span className="w-6 h-px bg-accent-500" />{children}
-    </span>
-  )
-}
-
-// ─── Página principal ─────────────────────────────────────────
 export default function LandingPage() {
-  const [config, setConfig] = useState<Config>({})
-  const [menuAberto, setMenuAberto] = useState(false)
+  const qualidadeInicial = detectarQualidade()
+  const [qualidade] = useState<Qualidade>(qualidadeInicial)
+  const [compact, setCompact] = useState(() => window.matchMedia('(max-width: 1023px)').matches)
+  const [reduzido] = useState(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+  const [pronta, setPronta] = useState(qualidadeInicial === 'estatica')
+  const [jaViu, setJaViu] = useState(false)
+  const [heroOn, setHeroOn] = useState(true)
+  const [narOn, setNarOn] = useState(false)
+  const [modeloOn, setModeloOn] = useState(false)
+  const [ctaOn, setCtaOn] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+  const [menuAberto, setMenuAberto] = useState(false)
+  const [servico, setServico] = useState(0)
+  const [hotspot, setHotspot] = useState(HOTSPOTS[0].id)
+  const [config, setConfig] = useState<Record<string, string>>({})
   const [depoimentos, setDepoimentos] = useState<DepoimentoAPI[]>([])
   const [formDep, setFormDep] = useState({ nome: '', cidade: '', cargo: '', texto: '', estrelas: 5 })
   const [enviandoDep, setEnviandoDep] = useState(false)
   const [depEnviado, setDepEnviado] = useState(false)
-  const [mostrarFormDep, setMostrarFormDep] = useState(false)
+  const [erroDep, setErroDep] = useState('')
+  const [depAberto, setDepAberto] = useState(false)
+
+  const heroRef = useRef<HTMLElement>(null)
+  const trilhaRef = useRef<HTMLElement>(null)
+  const modeloRef = useRef<HTMLElement>(null)
+  const ctaRef = useRef<HTMLElement>(null)
+  const tempoRef = useRef<HTMLOListElement>(null)
+  const cursorRef = useRef<HTMLDivElement>(null)
+  const faseNome = useRef<HTMLParagraphElement>(null)
+  const faseTexto = useRef<HTMLParagraphElement>(null)
+  const railRef = useRef<HTMLSpanElement>(null)
+  const estaticaNar = useRef<HTMLDivElement>(null)
+  const prog = useRef(0)
+  const fino = !reduzido && typeof window !== 'undefined' && window.matchMedia('(pointer: fine)').matches
+
+  useEffect(() => {
+    const marcar = (msg: string) => document.querySelector('.lp')?.setAttribute('data-erro', msg.slice(0, 200))
+    const onErr = (e: ErrorEvent) => marcar(e.message || 'erro')
+    const onRej = (e: PromiseRejectionEvent) => marcar(String(e.reason?.message || e.reason || 'rejeicao'))
+    window.addEventListener('error', onErr)
+    window.addEventListener('unhandledrejection', onRej)
+    return () => {
+      window.removeEventListener('error', onErr)
+      window.removeEventListener('unhandledrejection', onRej)
+    }
+  }, [])
 
   useEffect(() => {
     const base = apiBaseUrl()
@@ -157,716 +220,486 @@ export default function LandingPage() {
     axios.get(`${base}/depoimentos/aprovados`)
       .then(r => setDepoimentos(Array.isArray(r.data) ? r.data : []))
       .catch(() => setDepoimentos([]))
-    const onScroll = () => setScrolled(window.scrollY > 40)
-    window.addEventListener('scroll', onScroll)
-    return () => window.removeEventListener('scroll', onScroll)
   }, [])
+
+  useEffect(() => {
+    const id = window.setTimeout(() => setPronta(true), 3200)
+    return () => clearTimeout(id)
+  }, [])
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 1023px)')
+    const aplicar = () => setCompact(mq.matches)
+    mq.addEventListener('change', aplicar)
+    return () => mq.removeEventListener('change', aplicar)
+  }, [])
+
+  useEffect(() => {
+    const observar = (el: HTMLElement | null, set: (v: boolean) => void, margem = '180px') => {
+      if (!el) return () => {}
+      const obs = new IntersectionObserver(([e]) => set(e.isIntersecting), { rootMargin: margem })
+      obs.observe(el)
+      return () => obs.disconnect()
+    }
+    const limpar = [
+      observar(heroRef.current, setHeroOn, '0px'),
+      observar(trilhaRef.current, setNarOn, '0px'),
+      observar(modeloRef.current, setModeloOn, '280px'),
+      observar(ctaRef.current, setCtaOn, '240px'),
+    ]
+    return () => limpar.forEach(fn => fn())
+  }, [])
+
+  useEffect(() => {
+    const anterior = document.body.style.overflowX
+    document.body.style.overflowX = 'clip'
+    return () => { document.body.style.overflowX = anterior }
+  }, [])
+
+  useEffect(() => {
+    document.body.style.overflow = menuAberto ? 'hidden' : ''
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setMenuAberto(false) }
+    window.addEventListener('keydown', onKey)
+    return () => {
+      document.body.style.overflow = ''
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [menuAberto])
+
+  useEffect(() => {
+    let quadro = 0
+    let mx = window.innerWidth / 2
+    let my = window.innerHeight / 2
+    let cx = mx
+    let cy = my
+    let ultimoScroll = window.scrollY > 10
+    let ultimaFase = -1
+    let ultimoPasso = -1
+
+    const tick = () => {
+      const rolagem = window.scrollY > 10
+      if (rolagem !== ultimoScroll) {
+        ultimoScroll = rolagem
+        setScrolled(rolagem)
+      }
+      const trilha = trilhaRef.current
+      if (trilha) {
+        const rect = trilha.getBoundingClientRect()
+        const total = Math.max(rect.height - window.innerHeight, window.innerHeight * 0.55)
+        const p = Math.min(1, Math.max(0, -rect.top / total))
+        prog.current = p
+        estaticaNar.current?.style.setProperty('--p', String(p))
+        if (railRef.current) railRef.current.style.transform = `scaleY(${p})`
+        const idx = Math.max(0, FASES.findIndex(f => p <= f.ate))
+        if (idx !== ultimaFase) {
+          ultimaFase = idx
+          if (faseNome.current) faseNome.current.textContent = FASES[idx].nome
+          if (faseTexto.current) faseTexto.current.textContent = FASES[idx].texto
+        }
+      }
+      const tempo = tempoRef.current
+      if (tempo) {
+        const rect = tempo.getBoundingClientRect()
+        const p = reduzido ? 1 : Math.min(1, Math.max(0, (window.innerHeight * 0.62 - rect.top) / (rect.height * 0.8)))
+        tempo.style.setProperty('--p', String(p))
+        const passo = Math.min(5, Math.floor(p * 6))
+        if (passo !== ultimoPasso) {
+          ultimoPasso = passo
+          tempo.querySelectorAll('.lp-step').forEach((el, i) => el.classList.toggle('is-now', p >= (i + 0.15) / 6))
+        }
+      }
+      if (fino && cursorRef.current) {
+        cx += (mx - cx) * 0.2
+        cy += (my - cy) * 0.2
+        cursorRef.current.style.transform = `translate3d(${cx}px, ${cy}px, 0)`
+      }
+      quadro = requestAnimationFrame(tick)
+    }
+
+    const mover = (e: MouseEvent) => {
+      cursorRef.current?.classList.add('is-on')
+      mx = e.clientX
+      my = e.clientY
+      ponteiro.x = (e.clientX / window.innerWidth) * 2 - 1
+      ponteiro.y = -((e.clientY / window.innerHeight) * 2 - 1)
+      const alvo = document.elementFromPoint(e.clientX, e.clientY)
+      const cursor = cursorRef.current
+      if (!cursor) return
+      cursor.classList.toggle('is-hot', Boolean(alvo?.closest('a, button')))
+      cursor.classList.toggle('is-3d', Boolean(alvo?.closest('[data-cursor="3d"]')))
+      cursor.classList.toggle('is-off', Boolean(alvo?.closest('input, textarea, select')))
+    }
+
+    if (fino) window.addEventListener('mousemove', mover, { passive: true })
+    quadro = requestAnimationFrame(tick)
+    return () => {
+      cancelAnimationFrame(quadro)
+      if (fino) window.removeEventListener('mousemove', mover)
+    }
+  }, [fino, reduzido])
+
+  const enviarOrcamento = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    const dados = new FormData(e.currentTarget)
+    const nome = String(dados.get('nome') || '').trim()
+    const whatsapp = String(dados.get('whatsapp') || '').trim()
+    const email = String(dados.get('email') || '').trim()
+    const tipo = String(dados.get('tipo') || '').trim()
+    const projeto = String(dados.get('projeto') || '').trim()
+    const texto = [
+      MENSAGENS.orcamento,
+      nome && `Nome: ${nome}`,
+      whatsapp && `WhatsApp: ${whatsapp}`,
+      email && `E-mail: ${email}`,
+      tipo && `Tipo de obra: ${tipo}`,
+      projeto && `Projeto: ${projeto}`,
+    ].filter(Boolean).join('\n')
+    openWhatsApp(texto)
+  }
 
   const enviarDepoimento = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!formDep.nome.trim() || !formDep.texto.trim()) return
     setEnviandoDep(true)
+    setErroDep('')
     try {
       await axios.post(`${apiBaseUrl()}/depoimentos`, formDep)
       setDepEnviado(true)
       setFormDep({ nome: '', cidade: '', cargo: '', texto: '', estrelas: 5 })
     } catch {
-      alert('Erro ao enviar. Tente novamente.')
+      setErroDep('Não foi possível enviar agora. Tente novamente.')
     } finally {
       setEnviandoDep(false)
     }
   }
 
-  const listaDepoimentos = depoimentos.length > 0 ? depoimentos : DEPOIMENTOS_FALLBACK
+  const nome = config.empresa_nome || 'LJV Construção'
+  const email = (config.contato_email || '').trim() || 'contato@ljvconstrucao.com.br'
+  const enderecoBruto = (config.contato_endereco || '').trim()
+  const endereco = enderecoBruto && enderecoBruto !== SEED_IGNORAR.contato_endereco ? enderecoBruto : ''
+  const telefoneBruto = (config.contato_telefone || '').trim()
+  const telefone = telefoneBruto && telefoneBruto !== SEED_IGNORAR.contato_telefone ? telefoneBruto : ''
+  const instagram = (config.relatorio_instagram || config.contato_instagram || '').trim()
+  const instagramHref = instagram
+    ? (instagram.includes('http') ? instagram : `https://instagram.com/${instagram.replace(/^@/, '')}`)
+    : ''
+  const tresD = qualidade !== 'estatica'
+  const ponto = HOTSPOTS.find(h => h.id === hotspot) ?? HOTSPOTS[0]
 
-  const c = (k: string, fb: string) => config[k] || fb
-
-  const statsRef    = useReveal(0.2)
-  const servicosRef = useReveal(0.08)
-  const difRef      = useReveal(0.08)
-  const processoRef = useReveal(0.08)
-  const depRef      = useReveal(0.08)
-  const ctaRef      = useReveal(0.15)
-  const contatoRef  = useReveal(0.08)
-
-  const navLinks = [
-    { href: '#servicos', label: 'Serviços' },
-    { href: '#diferenciais', label: 'Por que nós' },
-    { href: '#processo', label: 'Como funciona' },
-    { href: '#depoimentos', label: 'Depoimentos' },
-    { href: '#contato', label: 'Contato' },
-  ]
+  const fecharMenu = () => setMenuAberto(false)
 
   return (
-    <div className="bg-stone-50 text-stone-900 overflow-x-hidden selection:bg-accent-300/40">
+    <div className={`lp${pronta ? ' is-pronta' : ''}${fino ? ' is-cursor' : ''}`} data-tier={qualidade} data-hero={heroOn ? '1' : '0'}>
+      <a className="lp-skip" href="#conteudo">Ir ao conteúdo</a>
+      {fino && <div ref={cursorRef} className="lp-cursor" aria-hidden="true" />}
 
-      {/* ── NAV ───────────────────────────────────────────────── */}
-      <nav className={`fixed top-0 inset-x-0 z-50 pt-[env(safe-area-inset-top)] transition-all duration-300 ${
-        scrolled ? 'bg-stone-950/98 backdrop-blur-md shadow-xl shadow-black/30' : 'bg-stone-950/80 backdrop-blur-md md:bg-transparent'
-      }`}>
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-10 h-16 flex items-center justify-between gap-2">
-          <Logo white logo={config.empresa_logo} nome={c('empresa_nome', 'LJV')} slogan={c('empresa_slogan', 'Construção')} />
-
-          {/* Links desktop */}
-          <div className="hidden md:flex items-center gap-8">
-            {navLinks.map(l => (
-              <a key={l.href} href={l.href}
-                className="text-sm text-stone-400 hover:text-white font-medium transition-colors">
-                {l.label}
-              </a>
-            ))}
-          </div>
-
-          <div className="flex items-center gap-2 sm:gap-3">
-            <Link
-              to="/login"
-              aria-label="Acesso admin"
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-stone-500 hover:text-stone-200 transition-colors"
-            >
-              <Lock size={13} />
-              <span className="hidden sm:inline">Admin</span>
-            </Link>
-            <a href="#contato"
-              className="text-xs sm:text-sm font-bold text-stone-950 bg-accent-400 hover:bg-accent-300 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl transition-all active:scale-95 shadow-lg shadow-accent-900/20 whitespace-nowrap">
-              <span className="sm:hidden">Orçamento</span>
-              <span className="hidden sm:inline">Solicitar orçamento</span>
-            </a>
+      <header className={`lp-header${scrolled ? ' is-scrolled' : ''}${menuAberto ? ' is-aberto' : ''}`}>
+        <div className="lp-header-row">
+          <a href="#topo" className="lp-marca" aria-label={nome}><Marca nome={nome} src="/images/logo-ljv-nav.png" /></a>
+          <nav className="lp-nav" aria-label="Seções">
+            {NAV.map(item => <a key={item.href} href={item.href}>{item.label}</a>)}
+          </nav>
+          <div className="lp-header-fim">
+            <Zap mensagem={MENSAGENS.orcamento} className="lp-btn lp-btn-header">Solicitar orçamento</Zap>
             <button
-              onClick={() => setMenuAberto(!menuAberto)}
-              className="md:hidden p-2 -mr-1 text-stone-300 hover:text-white transition-colors"
-              aria-label={menuAberto ? 'Fechar menu' : 'Abrir menu'}
+              type="button"
+              className="lp-burger"
+              aria-expanded={menuAberto}
+              aria-controls="menu-mobile"
+              onClick={() => setMenuAberto(v => !v)}
             >
-              {menuAberto ? <XIcon size={22} /> : <Menu size={22} />}
+              {menuAberto ? <X size={22} /> : <Menu size={22} />}
+              <span className="lp-sr">{menuAberto ? 'Fechar menu' : 'Abrir menu'}</span>
             </button>
           </div>
         </div>
+      </header>
 
-        {/* Mobile menu */}
-        {menuAberto && (
-          <div className="md:hidden bg-stone-950 border-t border-white/5 px-4 py-3 space-y-1">
-            {navLinks.map(l => (
-              <a key={l.href} href={l.href} onClick={() => setMenuAberto(false)}
-                className="block py-3 text-stone-300 hover:text-white font-medium transition-colors border-b border-white/5">
-                {l.label}
-              </a>
-            ))}
-            <Link
-              to="/login"
-              onClick={() => setMenuAberto(false)}
-              className="flex items-center gap-2 py-3 text-xs font-medium text-stone-500 hover:text-stone-300"
-            >
-              <Lock size={12} />
-              Acesso admin
-            </Link>
+      {menuAberto && (
+        <nav id="menu-mobile" className="lp-menu" aria-label="Menu">
+          {NAV.map(item => <a key={item.href} href={item.href} onClick={fecharMenu}>{item.label}</a>)}
+          <Zap mensagem={MENSAGENS.orcamento} className="lp-btn" >Solicitar orçamento</Zap>
+          <Link to="/login" className="lp-admin" onClick={fecharMenu}><Lock size={14} /> Admin</Link>
+        </nav>
+      )}
+
+      <main id="conteudo">
+        <section id="topo" ref={heroRef} className="lp-hero">
+          <div className="lp-cena" data-estado={tresD && heroOn ? 'webgl' : 'plano'} aria-hidden="true">
+            {tresD && heroOn ? (
+              <LimiteCena fallback={<MaqueteEstatica />}>
+                <Suspense fallback={<MaqueteEstatica />}>
+                  <HeroCena
+                    qualidade={qualidade}
+                    compact={compact}
+                    jaViu={jaViu}
+                    onReady={() => setPronta(true)}
+                    onTerminou={() => setJaViu(true)}
+                  />
+                </Suspense>
+              </LimiteCena>
+            ) : (
+              <MaqueteEstatica />
+            )}
           </div>
-        )}
-      </nav>
-
-      {/* ── HERO ──────────────────────────────────────────────── */}
-      <section className="relative min-h-[100svh] flex flex-col justify-center bg-stone-950 pt-[calc(4rem+env(safe-area-inset-top))] overflow-hidden">
-        {/* Pattern blueprint */}
-        <div className="absolute inset-0 opacity-[0.035]"
-          style={{ backgroundImage: 'repeating-linear-gradient(0deg,#fff 0,#fff 1px,transparent 1px,transparent 60px),repeating-linear-gradient(90deg,#fff 0,#fff 1px,transparent 1px,transparent 60px)' }} />
-
-        {/* Gradientes de luz */}
-        <div className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full opacity-10 blur-[120px] pointer-events-none"
-          style={{ background: 'radial-gradient(circle,#d4891a,transparent 70%)' }} />
-        <div className="absolute bottom-0 left-0 w-[500px] h-[400px] rounded-full opacity-5 blur-[100px] pointer-events-none"
-          style={{ background: 'radial-gradient(circle,#fff,transparent 70%)' }} />
-
-        {/* Barra lateral decorativa */}
-        <div className="absolute left-0 top-1/4 bottom-1/4 w-1 bg-gradient-to-b from-transparent via-accent-400 to-transparent opacity-60" />
-
-        <div className="max-w-6xl mx-auto w-full px-4 sm:px-6 md:px-10 py-12 sm:py-24">
-          {/* Tag */}
-          <div className="inline-flex items-center gap-2.5 max-w-full border border-white/10 bg-white/5 rounded-full px-3 sm:px-4 py-2 mb-6 sm:mb-10
-            animate-fade-in">
-            <span className="w-2 h-2 rounded-full bg-accent-400 animate-pulse flex-shrink-0" />
-            <span className="text-[11px] sm:text-xs text-stone-400 font-semibold tracking-wide sm:tracking-widest uppercase">
-              {c('hero_tag', 'Empresa de construção civil — Desde 2014')}
-            </span>
-          </div>
-
-          {/* Título principal */}
-          <h1 className="font-black leading-[0.92] sm:leading-[0.88] tracking-tight text-white break-words
-            text-[clamp(2.15rem,10vw,8.5rem)]
-            animate-fade-in [animation-delay:120ms] [animation-fill-mode:both]">
-            <span className="block">{c('hero_linha1', 'Construção')}</span>
-            <span className="block" style={{ WebkitTextStroke: '1px rgba(255,255,255,0.25)', color: 'transparent' }}>
-              {c('hero_linha2', 'de Excelência')}
-            </span>
-            <span className="block text-accent-400">{c('hero_linha3', 'com Garantia.')}</span>
-          </h1>
-
-          {/* Subtítulo */}
-          <p className="mt-6 sm:mt-10 text-stone-400 text-base sm:text-lg md:text-xl leading-relaxed max-w-xl
-            animate-fade-in [animation-delay:280ms] [animation-fill-mode:both]">
-            {c('hero_sub', 'Do projeto ao acabamento, entregamos obras residenciais e comerciais com rigor técnico, prazo cumprido e transparência em cada etapa.')}
-          </p>
-
-          {/* CTAs */}
-          <div className="mt-8 sm:mt-12 flex flex-col sm:flex-row gap-3 sm:gap-4
-            animate-fade-in [animation-delay:400ms] [animation-fill-mode:both]">
-            <a href="#contato"
-              className="inline-flex items-center justify-center gap-2.5 bg-accent-400 hover:bg-accent-300
-                text-stone-950 font-black px-8 py-4 rounded-xl text-sm transition-all hover:scale-105 active:scale-95
-                shadow-2xl shadow-accent-900/30">
-              Solicitar orçamento grátis <ArrowRight size={16} />
-            </a>
-            <a href="#servicos"
-              className="inline-flex items-center justify-center gap-2.5 border border-white/15 text-white
-                font-semibold px-8 py-4 rounded-xl text-sm transition-all hover:bg-white/5 active:scale-95">
-              Ver nossos serviços
-            </a>
-          </div>
-
-          {/* Badges de confiança */}
-          <div className="mt-8 sm:mt-16 flex flex-wrap gap-x-4 gap-y-2
-            animate-fade-in [animation-delay:550ms] [animation-fill-mode:both]">
-            {['✓ Empresa registrada no CREA', '✓ Seguro de responsabilidade civil', '✓ Garantia de 5 anos', '✓ Orçamento sem compromisso'].map(b => (
-              <span key={b} className="text-xs text-stone-500 font-medium flex items-center gap-1">{b}</span>
-            ))}
-          </div>
-        </div>
-
-        {/* Scroll hint */}
-        <div className="hidden sm:flex absolute bottom-8 left-1/2 -translate-x-1/2 flex-col items-center gap-2 text-stone-600 animate-bounce [animation-duration:2.5s]">
-          <span className="text-[10px] uppercase tracking-widest font-medium">Saiba mais</span>
-          <ChevronDown size={15} />
-        </div>
-      </section>
-
-      {/* ── STATS ─────────────────────────────────────────────── */}
-      <div ref={statsRef.ref}>
-        <section className="bg-stone-950 border-t border-white/5">
-          <div className={`max-w-6xl mx-auto px-6 md:px-10 py-16 transition-all duration-700
-            ${statsRef.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-0 md:divide-x md:divide-white/8">
-              {[
-                { v: Number(c('stat_obras','240')), s:'+', l: 'Obras entregues' },
-                { v: Number(c('stat_anos','11')), s:'', l: 'Anos de experiência' },
-                { v: Number(c('stat_clientes','98')), s:'%', l: 'Clientes satisfeitos' },
-                { v: Number(c('stat_equipe','60')), s:'+', l: 'Profissionais na equipe' },
-              ].map((st, i) => (
-                <div key={i} className="md:px-10 first:pl-0 last:pr-0">
-                  <StatNumber value={st.v} suffix={st.s} label={st.l} active={statsRef.visible} />
-                </div>
-              ))}
+          {!reduzido && (
+            <div className="lp-abre" aria-hidden="true">
+              <span /><span /><span /><i />
             </div>
+          )}
+          <div className="lp-hero-copy">
+            <p className="lp-kicker lp-surge lp-d1">LJV Construção</p>
+            <p className="lp-olho lp-surge lp-d2">Construção · Planejamento · Execução</p>
+            <h1 className="lp-surge lp-d3">Seu projeto começa aqui.</h1>
+            <p className="lp-lead lp-surge lp-d4">Construção com planejamento, transparência e acompanhamento em cada etapa.</p>
+            <div className="lp-acoes lp-surge lp-d5">
+              <Zap mensagem={MENSAGENS.hero} className="lp-btn">Solicitar orçamento</Zap>
+              <a className="lp-btn lp-btn-ghost" href="#sobre">Conhecer a LJV</a>
+            </div>
+            <p className="lp-nota lp-surge lp-d5">Maquete digital conceitual. Não representa uma obra da LJV.</p>
+          </div>
+          <a className="lp-rolar" href="#narrativa">Rolar</a>
+        </section>
+
+        <section id="narrativa" ref={trilhaRef} className="lp-trilha">
+          <div className="lp-nar">
+            <div className="lp-cena" aria-hidden="true">
+              {tresD && narOn ? (
+                <LimiteCena fallback={<div ref={estaticaNar}><MaqueteEstatica modo="narrativa" /></div>}>
+                  <Suspense fallback={<div ref={estaticaNar}><MaqueteEstatica modo="narrativa" /></div>}>
+                    <NarrativaCena qualidade={qualidade} compact={compact} progressoRef={prog} />
+                  </Suspense>
+                </LimiteCena>
+              ) : (
+                <div ref={estaticaNar}><MaqueteEstatica modo="narrativa" /></div>
+              )}
+            </div>
+            <div className="lp-nar-copy">
+              <p className="lp-kicker">Sequência</p>
+              <h2>Do projeto à realidade.</h2>
+              <p className="lp-fase" ref={faseNome}>Projeto</p>
+              <p className="lp-fase-texto" ref={faseTexto}>Linhas, medidas e a intenção do volume.</p>
+              <p className="lp-nota">Representação conceitual do processo. Não é uma obra executada pela LJV.</p>
+            </div>
+            <div className="lp-rail" aria-hidden="true"><span ref={railRef} /></div>
+            <p className="lp-sr">A maquete conceitual evolui com a rolagem: projeto, planejamento, estrutura, execução e entrega.</p>
           </div>
         </section>
-      </div>
 
-      {/* ── DIFERENCIAIS ─────────────────────────────────────── */}
-      <div ref={difRef.ref} id="diferenciais">
-        <section className="py-16 sm:py-24 px-4 sm:px-6 md:px-10 bg-white">
-          <div className="max-w-6xl mx-auto">
-            <div className={`mb-14 transition-all duration-600 ${difRef.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
-              <SectionTag>Por que nos escolher</SectionTag>
-              <h2 className="text-3xl md:text-5xl font-black text-stone-900 mt-5 leading-tight">
-                Uma empresa que você<br className="hidden md:block" /> pode confiar
-              </h2>
-              <p className="text-stone-500 mt-4 max-w-xl text-base leading-relaxed">
-                Somos uma construtora que preza pela seriedade, documentação e comunicação em cada obra.
-              </p>
-            </div>
+        <Ponte />
 
-            <div className="grid md:grid-cols-3 gap-6">
-              {DIFERENCIAIS.map((d, i) => (
-                <div
-                  key={d.titulo}
-                  className={`rounded-2xl border border-stone-100 p-8 hover:border-accent-200 hover:shadow-lg transition-all duration-500 group
-                    ${difRef.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
-                  style={{ transitionDelay: `${i * 100}ms` }}
-                >
-                  <div className="w-12 h-12 rounded-2xl bg-accent-50 flex items-center justify-center mb-6 group-hover:bg-accent-100 transition-colors">
-                    <d.icon size={22} className="text-accent-600" />
-                  </div>
-                  <h3 className="text-lg font-black text-stone-900 mb-3">{d.titulo}</h3>
-                  <p className="text-stone-500 text-sm leading-relaxed">{d.desc}</p>
-                </div>
-              ))}
-            </div>
-
-            {/* Faixa de credenciais */}
-            <div className="mt-10 rounded-2xl bg-stone-950 px-5 py-5 sm:px-8 sm:py-6 grid grid-cols-1 min-[420px]:grid-cols-2 md:flex md:flex-row items-start md:items-center justify-between gap-4 sm:gap-6">
-              {[
-                { icon: ShieldCheck, text: 'CREA/SP Registrado' },
-                { icon: Award, text: 'ISO 9001 — Qualidade' },
-                { icon: Users, text: '+240 obras concluídas' },
-                { icon: CheckCircle, text: 'Garantia em contrato' },
-              ].map(item => (
-                <div key={item.text} className="flex items-center gap-3">
-                  <item.icon size={18} className="text-accent-400 flex-shrink-0" />
-                  <span className="text-white font-semibold text-sm">{item.text}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+        <section id="sobre" className="lp-sobre">
+          <div className="lp-sobre-linhas" aria-hidden="true" />
+          <p className="lp-kicker">Sobre</p>
+          <h2>Construir pode ser mais simples.</h2>
+          <p className="lp-lead">A LJV CONSTRUÇÃO nasceu com um propósito simples: tornar o processo de construir mais organizado, transparente e próximo do cliente.</p>
+          <p>Do planejamento à execução, cada etapa importa.</p>
         </section>
-      </div>
 
-      {/* ── SERVIÇOS ──────────────────────────────────────────── */}
-      <div ref={servicosRef.ref} id="servicos">
-        <section className="py-16 sm:py-24 px-4 sm:px-6 md:px-10 bg-stone-50">
-          <div className="max-w-6xl mx-auto">
-            <div className={`mb-14 transition-all duration-600 ${servicosRef.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
-              <SectionTag>O que fazemos</SectionTag>
-              <h2 className="text-3xl md:text-5xl font-black text-stone-900 mt-5 leading-tight">
-                Soluções completas em<br className="hidden md:block" /> construção civil
-              </h2>
-            </div>
+        <Ponte />
 
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {SERVICOS.map((s, i) => (
-                <div
-                  key={s.titulo}
-                  className={`bg-white rounded-2xl p-5 sm:p-7 border border-stone-100 hover:border-stone-200 hover:shadow-xl transition-all duration-500 group cursor-default
-                    ${servicosRef.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
-                  style={{ transitionDelay: `${i * 80}ms` }}
-                >
-                  <div className={`w-11 h-11 rounded-xl ${s.cor} flex items-center justify-center mb-5 group-hover:scale-110 transition-transform`}>
-                    <s.icon size={20} className="text-white" />
-                  </div>
-                  <h3 className="text-base font-black text-stone-900 mb-2.5">{s.titulo}</h3>
-                  <p className="text-stone-500 text-sm leading-relaxed">{s.desc}</p>
-                  <div className="mt-5 flex items-center gap-1.5 text-xs font-bold text-accent-600 group-hover:gap-2.5 transition-all">
-                    Saiba mais <ArrowRight size={13} />
-                  </div>
-                </div>
-              ))}
-            </div>
+        <section id="servicos" className="lp-sec">
+          <div className="lp-sec-topo">
+            <p className="lp-kicker">Serviços</p>
+            <h2>O que a LJV conduz.</h2>
           </div>
-        </section>
-      </div>
-
-      {/* ── PROCESSO ──────────────────────────────────────────── */}
-      <div ref={processoRef.ref} id="processo">
-        <section className="py-16 sm:py-24 px-4 sm:px-6 md:px-10 bg-stone-950 relative overflow-hidden">
-          {/* Decoração */}
-          <div className="absolute right-0 top-0 bottom-0 w-1/3 opacity-5"
-            style={{ background: 'linear-gradient(to left,#d4891a,transparent)' }} />
-
-          <div className="max-w-6xl mx-auto relative">
-            <div className={`mb-16 transition-all duration-600 ${processoRef.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
-              <SectionTag>Como funciona</SectionTag>
-              <h2 className="text-3xl md:text-5xl font-black text-white mt-5 leading-tight">
-                Do primeiro contato<br className="hidden md:block" /> à entrega das chaves
-              </h2>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-5">
-              {PROCESSO.map((p, i) => (
-                <div
-                  key={p.n}
-                  className={`relative border border-white/8 rounded-2xl p-5 sm:p-8 hover:border-accent-400/30 hover:bg-white/3 transition-all duration-500 group
-                    ${processoRef.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
-                  style={{ transitionDelay: `${i * 100}ms` }}
-                >
-                  <div className="flex items-start gap-5">
-                    <span className="text-4xl sm:text-5xl font-black text-stone-800 group-hover:text-accent-400/60 transition-colors leading-none flex-shrink-0 select-none">
-                      {p.n}
-                    </span>
-                    <div>
-                      <h3 className="text-lg font-black text-white mb-2">{p.titulo}</h3>
-                      <p className="text-stone-500 text-sm leading-relaxed">{p.desc}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* CTA interno */}
-            <div className={`mt-12 text-center transition-all duration-700 [transition-delay:400ms]
-              ${processoRef.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-              <a href="#contato"
-                className="inline-flex items-center gap-2.5 bg-accent-400 hover:bg-accent-300 text-stone-950 font-black px-8 py-4 rounded-xl text-sm transition-all hover:scale-105">
-                Comece agora — é grátis <ArrowRight size={16} />
-              </a>
-            </div>
-          </div>
-        </section>
-      </div>
-
-      {/* ── DEPOIMENTOS ───────────────────────────────────────── */}
-      <div ref={depRef.ref} id="depoimentos">
-        <section className="py-16 sm:py-24 px-4 sm:px-6 md:px-10 bg-white">
-          <div className="max-w-6xl mx-auto">
-            <div className={`mb-14 transition-all duration-600 ${depRef.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
-              <SectionTag>Depoimentos reais</SectionTag>
-              <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mt-5">
-                <h2 className="text-3xl md:text-5xl font-black text-stone-900 leading-tight">
-                  O que nossos clientes<br className="hidden md:block" /> dizem sobre nós
-                </h2>
+          <div className="lp-serv">
+            <div className="lp-serv-lista" role="list">
+              {SERVICOS.map((item, i) => (
                 <button
-                  onClick={() => setMostrarFormDep(!mostrarFormDep)}
-                  className="flex-shrink-0 inline-flex items-center gap-2 border-2 border-stone-200 hover:border-accent-400 text-stone-700 hover:text-accent-600 font-semibold px-5 py-2.5 rounded-xl text-sm transition-all"
+                  key={item.n}
+                  type="button"
+                  role="listitem"
+                  className={`lp-serv-item${servico === i ? ' is-ativo' : ''}`}
+                  onMouseEnter={() => setServico(i)}
+                  onFocus={() => setServico(i)}
+                  aria-pressed={servico === i}
                 >
-                  <MessageSquarePlus size={16} />
-                  {mostrarFormDep ? 'Fechar' : 'Deixar depoimento'}
+                  <span>{item.n}</span>
+                  <strong>{item.titulo}</strong>
+                  <em>{item.texto}</em>
                 </button>
-              </div>
-            </div>
-
-            {/* Cards de depoimentos */}
-            <div className="grid md:grid-cols-3 gap-6">
-              {listaDepoimentos.map((d, i) => (
-                <div
-                  key={`${d.id}-${i}`}
-                  className={`bg-stone-50 border border-stone-100 rounded-2xl p-5 sm:p-7 hover:shadow-lg hover:border-stone-200 transition-all duration-500
-                    ${depRef.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
-                  style={{ transitionDelay: `${i * 100}ms` }}
-                >
-                  {/* Estrelas */}
-                  <div className="flex gap-1 mb-4">
-                    {Array.from({ length: Math.min(5, Math.max(0, Number(d.estrelas) || 0)) }).map((_, j) => (
-                      <Star key={j} size={14} className="fill-accent-400 text-accent-400" />
-                    ))}
-                    {Array.from({ length: 5 - Math.min(5, Math.max(0, Number(d.estrelas) || 0)) }).map((_, j) => (
-                      <Star key={j} size={14} className="text-stone-300" />
-                    ))}
-                  </div>
-                  {/* Texto */}
-                  <p className="text-stone-700 text-sm leading-relaxed mb-6 line-clamp-5">
-                    "{d.texto}"
-                  </p>
-                  {/* Autor */}
-                  <div className="flex items-center gap-3 pt-5 border-t border-stone-200">
-                    <div className="w-9 h-9 rounded-full bg-stone-900 flex items-center justify-center flex-shrink-0">
-                      <span className="text-accent-400 font-black text-xs">
-                        {((d.nome ?? '').split(' ').filter(Boolean).slice(0, 2).map(n => n[0]).join('').toUpperCase()) || '?'}
-                      </span>
-                    </div>
-                    <div className="min-w-0">
-                      <div className="font-bold text-stone-900 text-sm truncate">{d.nome}</div>
-                      <div className="text-xs text-stone-400 flex items-center gap-1">
-                        {d.cidade && <><MapPin size={10} className="flex-shrink-0" /><span className="truncate">{d.cidade}</span></>}
-                        {d.cargo && <><span className="text-stone-300 mx-1">·</span><span className="truncate">{d.cargo}</span></>}
-                      </div>
-                    </div>
-                  </div>
-                </div>
               ))}
             </div>
+            <div className="lp-serv-palco">
+              <Desenho i={servico} />
+              <p>Estudo visual. Não é um projeto executado.</p>
+              <Zap mensagem={MENSAGENS.servicos} className="lp-btn lp-btn-ghost">Falar sobre os serviços</Zap>
+            </div>
+          </div>
+        </section>
 
-            {/* Formulário de depoimento */}
-            {mostrarFormDep && (
-              <div className="mt-12 border-t border-stone-100 pt-12">
-                <div className="max-w-2xl mx-auto">
-                  <div className="text-center mb-8">
-                    <h3 className="text-2xl font-black text-stone-900">Compartilhe sua experiência</h3>
-                    <p className="text-stone-500 text-sm mt-2">
-                      Seu depoimento será analisado pela equipe antes de aparecer no site.
-                    </p>
-                  </div>
-
-                  {depEnviado ? (
-                    <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-10 text-center">
-                      <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <ThumbsUp size={28} className="text-emerald-600" />
-                      </div>
-                      <h4 className="text-xl font-black text-emerald-800 mb-2">Obrigado pelo depoimento!</h4>
-                      <p className="text-emerald-700 text-sm leading-relaxed">
-                        Recebemos sua avaliação. Nossa equipe irá analisá-la e, se aprovada, ela aparecerá aqui em breve.
-                      </p>
-                      <button
-                        onClick={() => { setDepEnviado(false); setMostrarFormDep(false) }}
-                        className="mt-6 text-sm font-semibold text-emerald-700 hover:text-emerald-900 underline underline-offset-2 transition-colors"
-                      >
-                        Fechar
-                      </button>
-                    </div>
-                  ) : (
-                    <form onSubmit={enviarDepoimento} className="bg-stone-50 border border-stone-200 rounded-2xl p-5 sm:p-7 space-y-4">
-                      {/* Nome + Cidade */}
-                      <div className="grid sm:grid-cols-2 gap-4">
-                        <div>
-                          <label className="text-xs font-bold text-stone-500 uppercase tracking-wider block mb-2">
-                            Seu nome *
-                          </label>
-                          <input
-                            type="text" required
-                            placeholder="Nome completo"
-                            className="input"
-                            value={formDep.nome}
-                            onChange={e => setFormDep(f => ({ ...f, nome: e.target.value }))}
-                          />
-                        </div>
-                        <div>
-                          <label className="text-xs font-bold text-stone-500 uppercase tracking-wider block mb-2">
-                            Cidade / Estado
-                          </label>
-                          <input
-                            type="text"
-                            placeholder="Ex: São Paulo, SP"
-                            className="input"
-                            value={formDep.cidade}
-                            onChange={e => setFormDep(f => ({ ...f, cidade: e.target.value }))}
-                          />
-                        </div>
-                      </div>
-
-                      {/* Cargo / Contexto */}
-                      <div>
-                        <label className="text-xs font-bold text-stone-500 uppercase tracking-wider block mb-2">
-                          Contexto da obra
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="Ex: Proprietário de residência, Dono de empresa..."
-                          className="input"
-                          value={formDep.cargo}
-                          onChange={e => setFormDep(f => ({ ...f, cargo: e.target.value }))}
-                        />
-                      </div>
-
-                      {/* Avaliação (estrelas) */}
-                      <div>
-                        <label className="text-xs font-bold text-stone-500 uppercase tracking-wider block mb-2">
-                          Avaliação
-                        </label>
-                        <div className="flex gap-2">
-                          {[1, 2, 3, 4, 5].map(n => (
-                            <button
-                              key={n} type="button"
-                              onClick={() => setFormDep(f => ({ ...f, estrelas: n }))}
-                              className="p-1 transition-transform hover:scale-125"
-                            >
-                              <Star
-                                size={28}
-                                className={n <= formDep.estrelas
-                                  ? 'fill-accent-400 text-accent-400'
-                                  : 'text-stone-300 hover:text-stone-400'
-                                }
-                              />
-                            </button>
-                          ))}
-                          <span className="text-sm text-stone-500 self-center ml-2 font-semibold">
-                            {['', 'Ruim', 'Regular', 'Bom', 'Ótimo', 'Excelente!'][formDep.estrelas]}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Depoimento */}
-                      <div>
-                        <label className="text-xs font-bold text-stone-500 uppercase tracking-wider block mb-2">
-                          Seu depoimento *
-                        </label>
-                        <textarea
-                          required rows={4}
-                          placeholder="Conte como foi a sua experiência com a LJV Construção: o serviço contratado, o atendimento, a qualidade da obra..."
-                          className="input resize-none"
-                          value={formDep.texto}
-                          onChange={e => setFormDep(f => ({ ...f, texto: e.target.value }))}
-                        />
-                        <div className="text-xs text-stone-400 mt-1 text-right">{formDep.texto.length} caracteres</div>
-                      </div>
-
-                      {/* Aviso de privacidade */}
-                      <p className="text-xs text-stone-400 bg-stone-100 rounded-xl px-4 py-3 leading-relaxed">
-                        🔒 Seus dados são usados apenas para identificação no depoimento. Não compartilhamos informações com terceiros. O depoimento passará por análise antes de ser publicado.
-                      </p>
-
-                      <div className="flex gap-3 pt-2">
-                        <button
-                          type="button"
-                          onClick={() => setMostrarFormDep(false)}
-                          className="flex-1 btn-outline"
-                        >
-                          Cancelar
-                        </button>
-                        <button
-                          type="submit"
-                          disabled={enviandoDep || !formDep.nome.trim() || !formDep.texto.trim()}
-                          className="flex-1 inline-flex items-center justify-center gap-2 bg-stone-900 hover:bg-stone-950 text-white font-bold py-3 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          {enviandoDep
-                            ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            : <Send size={16} />
-                          }
-                          {enviandoDep ? 'Enviando...' : 'Enviar depoimento'}
-                        </button>
-                      </div>
-                    </form>
-                  )}
-                </div>
-              </div>
+        <section id="maquete" ref={modeloRef} className="lp-modelo">
+          <div className="lp-modelo-copy">
+            <p className="lp-kicker">Maquete</p>
+            <h2>Um volume para olhar de perto.</h2>
+            <p className="lp-lead">Gire o estudo e percorra três camadas de uma construção. É um modelo conceitual, não uma obra da LJV.</p>
+            <div className="lp-hots" role="list">
+              {HOTSPOTS.map(item => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={`lp-hot${hotspot === item.id ? ' is-ativo' : ''}`}
+                  aria-pressed={hotspot === item.id}
+                  onClick={() => setHotspot(item.id)}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+            <p className="lp-hot-texto">{ponto.texto}</p>
+            <p className="lp-hint-touch">Arraste para girar a maquete.</p>
+          </div>
+          <div className="lp-cena lp-cena-hit" data-cursor="3d" aria-hidden="true">
+            {tresD && modeloOn ? (
+              <LimiteCena fallback={<MaqueteEstatica />}>
+                <Suspense fallback={<MaqueteEstatica />}>
+                  <ModeloInterativo qualidade={qualidade} compact={compact} ativo={hotspot} onEscolher={setHotspot} />
+                </Suspense>
+              </LimiteCena>
+            ) : (
+              <MaqueteEstatica />
             )}
           </div>
         </section>
-      </div>
 
-      {/* ── CTA FINAL ─────────────────────────────────────────── */}
-      <div ref={ctaRef.ref}>
-        <section className="relative py-16 sm:py-24 px-4 sm:px-6 md:px-10 bg-accent-400 overflow-hidden">
-          <div className="absolute inset-0 opacity-[0.06]"
-            style={{ backgroundImage: 'repeating-linear-gradient(45deg,#000 0,#000 1px,transparent 1px,transparent 20px)' }} />
-          <div className={`max-w-3xl mx-auto text-center relative transition-all duration-700
-            ${ctaRef.visible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
-            <SectionTag>Pronto para construir?</SectionTag>
-            <h2 className="text-3xl sm:text-4xl md:text-6xl font-black text-stone-950 mt-6 leading-tight">
-              {c('cta_titulo', 'Seu projeto começa com uma conversa')}
-            </h2>
-            <p className="mt-5 text-stone-800 text-lg max-w-xl mx-auto leading-relaxed">
-              Fale com nossa equipe hoje mesmo. Orçamento detalhado, sem compromisso e sem enrolação.
-            </p>
-            <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
-              <a href="#contato"
-                className="inline-flex items-center justify-center gap-2.5 bg-stone-950 hover:bg-stone-900 text-white
-                  font-black px-8 py-4 rounded-xl transition-all hover:scale-105 active:scale-95 shadow-xl">
-                Solicitar orçamento grátis <ArrowRight size={16} />
-              </a>
-              <a href={`tel:${c('contato_telefone','(11) 9 9999-9999')}`}
-                className="inline-flex items-center justify-center gap-2.5 border-2 border-stone-950/20 text-stone-950
-                  font-bold px-8 py-4 rounded-xl transition-all hover:bg-stone-950/5 active:scale-95">
-                <Phone size={16} /> Ligar agora
-              </a>
-            </div>
+        <section className="lp-sec lp-dif">
+          <div className="lp-sec-topo">
+            <p className="lp-kicker">Jeito de trabalhar</p>
+            <h2>Mais do que construir. Acompanhamos.</h2>
           </div>
+          <ol className="lp-dif-lista">
+            {DIFERENCIAIS.map(item => (
+              <li key={item.n}>
+                <span>{item.n}</span>
+                <strong>{item.titulo}</strong>
+                <p>{item.texto}</p>
+              </li>
+            ))}
+          </ol>
+          <p className="lp-nota">Os números organizam a leitura. Não são estatísticas.</p>
         </section>
-      </div>
 
-      {/* ── CONTATO ───────────────────────────────────────────── */}
-      <div ref={contatoRef.ref} id="contato">
-        <section className="py-16 sm:py-24 px-4 sm:px-6 md:px-10 bg-stone-950">
-          <div className="max-w-6xl mx-auto">
-            <div className={`mb-14 transition-all duration-600 ${contatoRef.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
-              <SectionTag>Entre em contato</SectionTag>
-              <h2 className="text-3xl md:text-5xl font-black text-white mt-5 leading-tight">
-                Vamos conversar sobre<br className="hidden md:block" /> o seu projeto
-              </h2>
-            </div>
+        <section id="processo" className="lp-sec">
+          <div className="lp-sec-topo">
+            <p className="lp-kicker">Processo</p>
+            <h2>Da conversa à entrega.</h2>
+          </div>
+          <ol ref={tempoRef} className="lp-tempo">
+            {PROCESSO.map(item => (
+              <li key={item.n} className="lp-step">
+                <span>{item.n}</span>
+                <strong>{item.titulo}</strong>
+                <p>{item.texto}</p>
+              </li>
+            ))}
+          </ol>
+          <Zap mensagem={MENSAGENS.hero} className="lp-btn">Conversar sobre um projeto</Zap>
+        </section>
 
-            <div className={`grid md:grid-cols-5 gap-8 md:gap-12 transition-all duration-700 ${contatoRef.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-              {/* Informações — 2/5 */}
-              <div className="md:col-span-2 space-y-6">
-                {[
-                  {
-                    icon: Phone,
-                    label: 'Telefone / WhatsApp',
-                    value: c('contato_telefone', '(11) 9 9999-9999'),
-                    href: `tel:${c('contato_telefone', '11999999999')}`,
-                  },
-                  {
-                    icon: Mail,
-                    label: 'E-mail',
-                    value: c('contato_email', 'contato@ljvconstrucao.com.br'),
-                    href: `mailto:${c('contato_email', 'contato@ljvconstrucao.com.br')}`,
-                  },
-                  {
-                    icon: MapPin,
-                    label: 'Localização',
-                    value: c('contato_endereco', 'São Paulo, SP — Brasil'),
-                    href: undefined,
-                  },
-                ].map(item => (
-                  <div key={item.label} className="flex items-start gap-4 group">
-                    <div className="w-11 h-11 rounded-xl bg-white/5 group-hover:bg-accent-400/10 flex items-center justify-center flex-shrink-0 transition-colors">
-                      <item.icon size={18} className="text-stone-400 group-hover:text-accent-400 transition-colors" />
-                    </div>
-                    <div>
-                      <div className="text-xs text-stone-600 font-semibold uppercase tracking-wider mb-1">{item.label}</div>
-                      {item.href
-                        ? <a href={item.href} className="font-bold text-white hover:text-accent-400 transition-colors">{item.value}</a>
-                        : <div className="font-bold text-white">{item.value}</div>
-                      }
-                    </div>
-                  </div>
+        <section id="contato" className="lp-contato">
+          <div>
+            <p className="lp-kicker">Contato</p>
+            <h2>Conte o projeto.</h2>
+            <p className="lp-lead">A mensagem abre no WhatsApp da LJV, com o que você escrever abaixo.</p>
+            <form className="lp-form" onSubmit={enviarOrcamento}>
+              <label>Nome<input name="nome" autoComplete="name" required /></label>
+              <label>WhatsApp<input name="whatsapp" inputMode="tel" autoComplete="tel" required onChange={e => { e.target.value = maskPhone(e.target.value) }} /></label>
+              <label>E-mail<input name="email" type="email" autoComplete="email" /></label>
+              <label>Tipo de obra<input name="tipo" placeholder="Residencial, comercial, reforma" /></label>
+              <label className="lp-largo">Projeto<textarea name="projeto" rows={3} /></label>
+              <button className="lp-btn" type="submit">Enviar pelo WhatsApp</button>
+            </form>
+          </div>
+          <aside>
+            <a href={linkWhatsApp(MENSAGENS.orcamento)} onClick={e => { e.preventDefault(); openWhatsApp(MENSAGENS.orcamento) }}>WhatsApp</a>
+            <a href={`mailto:${email}`}>{email}</a>
+            {telefone && <p>{telefone}</p>}
+            {endereco && <p>{endereco}</p>}
+            {instagramHref && <a href={instagramHref} target="_blank" rel="noopener noreferrer">Instagram</a>}
+            {depoimentos.length > 0 && (
+              <ul className="lp-quotes">
+                {depoimentos.map(d => (
+                  <li key={d.id}>
+                    <p>“{d.texto}”</p>
+                    <span>{d.nome}{d.cidade ? ` · ${d.cidade}` : ''}</span>
+                  </li>
                 ))}
+              </ul>
+            )}
+            <button type="button" className="lp-texto" onClick={() => setDepAberto(v => !v)}>
+              {depAberto ? 'Fechar depoimento' : 'Enviar um depoimento'}
+            </button>
+            {depAberto && (
+              depEnviado ? <p>Depoimento recebido. Ele só aparece se for aprovado.</p> : (
+                <form className="lp-form" onSubmit={enviarDepoimento}>
+                  <label>Nome<input required value={formDep.nome} onChange={e => setFormDep(f => ({ ...f, nome: e.target.value }))} /></label>
+                  <label>Cidade<input value={formDep.cidade} onChange={e => setFormDep(f => ({ ...f, cidade: e.target.value }))} /></label>
+                  <label className="lp-largo">Obra ou cargo<input value={formDep.cargo} onChange={e => setFormDep(f => ({ ...f, cargo: e.target.value }))} /></label>
+                  <label className="lp-largo">Depoimento<textarea required rows={3} value={formDep.texto} onChange={e => setFormDep(f => ({ ...f, texto: e.target.value }))} /></label>
+                  <div className="lp-estrelas" role="group" aria-label="Estrelas">
+                    {[1, 2, 3, 4, 5].map(n => (
+                      <button key={n} type="button" onClick={() => setFormDep(f => ({ ...f, estrelas: n }))} aria-label={`${n} estrelas`}>
+                        <Star size={16} className={n <= formDep.estrelas ? 'is-on' : ''} />
+                      </button>
+                    ))}
+                  </div>
+                  {erroDep && <p role="alert">{erroDep}</p>}
+                  <button className="lp-btn lp-btn-ghost" type="submit" disabled={enviandoDep}>{enviandoDep ? 'Enviando…' : 'Enviar depoimento'}</button>
+                </form>
+              )
+            )}
+          </aside>
+        </section>
 
-                {/* Horário */}
-                <div className="mt-8 border-t border-white/8 pt-8">
-                  <div className="text-xs text-stone-600 font-semibold uppercase tracking-wider mb-3">Horário de atendimento</div>
-                  <div className="space-y-1.5 text-sm">
-                    <div className="flex justify-between text-stone-300">
-                      <span>Segunda a sexta</span><span className="font-bold text-white">08h às 18h</span>
-                    </div>
-                    <div className="flex justify-between text-stone-300">
-                      <span>Sábado</span><span className="font-bold text-white">08h às 12h</span>
-                    </div>
-                    <div className="flex justify-between text-stone-500">
-                      <span>Domingo</span><span>Fechado</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Formulário — 3/5 */}
-              <form
-                onSubmit={e => { e.preventDefault(); alert('Mensagem enviada! Nossa equipe entrará em contato em breve.') }}
-                className="md:col-span-3 space-y-4"
-              >
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs font-bold text-stone-500 uppercase tracking-wider block mb-2">Nome completo *</label>
-                    <input required type="text" placeholder="Seu nome" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-stone-600 text-base sm:text-sm focus:outline-none focus:border-accent-400/50 focus:bg-white/8 transition-all" />
-                  </div>
-                  <div>
-                    <label className="text-xs font-bold text-stone-500 uppercase tracking-wider block mb-2">WhatsApp *</label>
-                    <input type="tel" placeholder="(00) 0 0000-0000" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-stone-600 text-base sm:text-sm focus:outline-none focus:border-accent-400/50 focus:bg-white/8 transition-all"
-                      onChange={e => { e.target.value = maskPhone(e.target.value) }} />
-                  </div>
-                </div>
-                <div>
-                  <label className="text-xs font-bold text-stone-500 uppercase tracking-wider block mb-2">E-mail</label>
-                  <input type="email" placeholder="seu@email.com" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-stone-600 text-base sm:text-sm focus:outline-none focus:border-accent-400/50 focus:bg-white/8 transition-all" />
-                </div>
-                <div>
-                  <label className="text-xs font-bold text-stone-500 uppercase tracking-wider block mb-2">Tipo de obra</label>
-                  <select className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-stone-400 text-base sm:text-sm focus:outline-none focus:border-accent-400/50 transition-all appearance-none">
-                    <option value="">Selecione o tipo de projeto</option>
-                    <option>Construção residencial</option>
-                    <option>Construção comercial</option>
-                    <option>Reforma / Renovação</option>
-                    <option>Fundação e estrutura</option>
-                    <option>Acabamento e pintura</option>
-                    <option>Outro</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs font-bold text-stone-500 uppercase tracking-wider block mb-2">Descreva seu projeto *</label>
-                  <textarea required rows={4} placeholder="Conte-nos sobre sua obra: localização, tamanho aproximado, prazo desejado e o que você espera da LJV..." className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-stone-600 text-base sm:text-sm focus:outline-none focus:border-accent-400/50 focus:bg-white/8 transition-all resize-none" />
-                </div>
-                <button type="submit"
-                  className="w-full inline-flex items-center justify-center gap-2.5 bg-accent-400 hover:bg-accent-300 text-stone-950 font-black py-4 rounded-xl text-sm transition-all hover:scale-[1.01] active:scale-95 shadow-lg shadow-accent-900/20">
-                  Enviar mensagem — orçamento gratuito <ArrowRight size={16} />
-                </button>
-                <p className="text-center text-stone-600 text-xs">
-                  Respondemos em até 24 horas. Seus dados são protegidos.
-                </p>
-              </form>
-            </div>
+        <section ref={ctaRef} className="lp-cta">
+          <div className="lp-cena" aria-hidden="true">
+            {tresD && ctaOn ? (
+              <LimiteCena fallback={null}>
+                <Suspense fallback={null}>
+                  <CtaCena qualidade={qualidade} compact={compact} />
+                </Suspense>
+              </LimiteCena>
+            ) : (
+              <div className="lp-cta-linhas" />
+            )}
+          </div>
+          <div className="lp-cta-copy">
+            <h2>Tem um projeto em mente?</h2>
+            <p>Vamos conversar sobre como transformar sua ideia em realidade.</p>
+            <Zap
+              mensagem={MENSAGENS.orcamento}
+              className="lp-btn lp-btn-claro"
+              onMouseEnter={() => { ponteiro.hoverCta = 1 }}
+              onMouseLeave={() => { ponteiro.hoverCta = 0 }}
+            >
+              Falar com a LJV
+            </Zap>
           </div>
         </section>
-      </div>
+      </main>
 
-      {/* ── FOOTER ────────────────────────────────────────────── */}
-      <footer className="bg-stone-950 border-t border-white/5 py-10 px-6 md:px-10">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex flex-col items-center md:items-start gap-2">
-              <Logo white logo={config.empresa_logo} nome={c('empresa_nome', 'LJV')} slogan={c('empresa_slogan', 'Construção')} />
-              <p className="text-stone-600 text-xs">
-                {c('rodape_copy', '© 2024 LJV Construção. Todos os direitos reservados.')}
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-6 justify-center">
-              {navLinks.map(l => (
-                <a key={l.href} href={l.href} className="text-stone-600 hover:text-stone-400 text-xs font-medium transition-colors">
-                  {l.label}
-                </a>
-              ))}
-            </div>
-            <Link to="/login" className="inline-flex items-center gap-1.5 text-[11px] font-medium text-stone-600 hover:text-stone-400 transition-colors">
-              <Lock size={12} />
-              Admin
-            </Link>
-          </div>
-          <div className="mt-8 pt-6 border-t border-white/5 text-center text-stone-700 text-xs">
-            Empresa registrada no CREA/SP · Obras com ART · Seguro de responsabilidade civil ativo
-          </div>
+      <footer className="lp-foot">
+        <a href="#topo" aria-label={nome}><Marca nome={nome} /></a>
+        <div>
+          <strong>LJV Construção</strong>
+          <p>Construindo com planejamento, transparência e compromisso.</p>
+        </div>
+        <div className="lp-foot-links">
+          {NAV.map(item => <a key={item.href} href={item.href}>{item.label}</a>)}
+          <a href={linkWhatsApp(MENSAGENS.orcamento)} onClick={e => { e.preventDefault(); openWhatsApp(MENSAGENS.orcamento) }}>WhatsApp</a>
+          <a href={`mailto:${email}`}>{email}</a>
+          <Link to="/login" className="lp-admin"><Lock size={12} /> Admin</Link>
         </div>
       </footer>
+
+      <Zap mensagem={MENSAGENS.orcamento} className="lp-wa" >
+        <IconeWhats />
+        <span className="lp-sr">WhatsApp</span>
+      </Zap>
+      <div className="lp-dock">
+        <Zap mensagem={MENSAGENS.orcamento} className="lp-btn">Falar com a LJV</Zap>
+      </div>
     </div>
   )
 }

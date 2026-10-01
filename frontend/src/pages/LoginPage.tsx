@@ -166,17 +166,6 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Dica de dev */}
-          <div className="mt-8 p-4 bg-primary-900/5 border border-primary-200/50 rounded-xl">
-            <p className="text-xs font-semibold text-primary-500 uppercase tracking-wide mb-2">
-              Acesso de desenvolvimento
-            </p>
-            <div className="flex gap-4 text-sm text-primary-600">
-              <span>Usuário: <strong className="text-primary-900">admin</strong></span>
-              <span>Senha: <strong className="text-primary-900">admin123</strong></span>
-            </div>
-          </div>
-
           <div className="mt-8 text-center">
             <Link to="/" className="text-sm text-primary-400 hover:text-primary-600 flex items-center justify-center gap-1.5">
               <ArrowLeft size={14} />
