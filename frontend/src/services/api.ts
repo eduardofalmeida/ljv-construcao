@@ -1,10 +1,25 @@
 import axios from 'axios'
 
-/** Em produção (Railway), defina VITE_API_URL=https://seu-backend.up.railway.app/api no build. */
-const rawBase = (import.meta.env.VITE_API_URL as string | undefined)?.trim()
-const baseURL = rawBase && rawBase.length > 0
-  ? rawBase.replace(/\/$/, '')
-  : '/api'
+/**
+ * Em produção (Railway), defina no BUILD:
+ * VITE_API_URL=https://seu-backend.up.railway.app/api
+ * Sem https:// o navegador trata o host como caminho do próprio frontend.
+ */
+function normalizeApiBase(raw: string | undefined): string {
+  const value = raw?.trim().replace(/\/$/, '') ?? ''
+  if (!value) return '/api'
+
+  const withProtocol = /^https?:\/\//i.test(value) ? value : `https://${value}`
+  try {
+    const url = new URL(withProtocol)
+    if (url.pathname === '/' || url.pathname === '') url.pathname = '/api'
+    return url.toString().replace(/\/$/, '')
+  } catch {
+    return '/api'
+  }
+}
+
+const baseURL = normalizeApiBase(import.meta.env.VITE_API_URL as string | undefined)
 
 const api = axios.create({
   baseURL,

@@ -151,9 +151,11 @@ export default function LandingPage() {
 
   useEffect(() => {
     const base = apiBaseUrl()
-    axios.get(`${base}/config/site`).then(r => setConfig(r.data)).catch(() => {})
+    axios.get(`${base}/config/site`).then(r => {
+      if (r.data && typeof r.data === 'object' && !Array.isArray(r.data)) setConfig(r.data)
+    }).catch(() => {})
     axios.get(`${base}/depoimentos/aprovados`)
-      .then(r => setDepoimentos(r.data))
+      .then(r => setDepoimentos(Array.isArray(r.data) ? r.data : []))
       .catch(() => setDepoimentos([]))
     const onScroll = () => setScrolled(window.scrollY > 40)
     window.addEventListener('scroll', onScroll)
@@ -498,10 +500,10 @@ export default function LandingPage() {
                 >
                   {/* Estrelas */}
                   <div className="flex gap-1 mb-4">
-                    {Array.from({ length: d.estrelas }).map((_, j) => (
+                    {Array.from({ length: Math.min(5, Math.max(0, Number(d.estrelas) || 0)) }).map((_, j) => (
                       <Star key={j} size={14} className="fill-accent-400 text-accent-400" />
                     ))}
-                    {Array.from({ length: 5 - d.estrelas }).map((_, j) => (
+                    {Array.from({ length: 5 - Math.min(5, Math.max(0, Number(d.estrelas) || 0)) }).map((_, j) => (
                       <Star key={j} size={14} className="text-stone-300" />
                     ))}
                   </div>
@@ -513,7 +515,7 @@ export default function LandingPage() {
                   <div className="flex items-center gap-3 pt-5 border-t border-stone-200">
                     <div className="w-9 h-9 rounded-full bg-stone-900 flex items-center justify-center flex-shrink-0">
                       <span className="text-accent-400 font-black text-xs">
-                        {d.nome.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()}
+                        {((d.nome ?? '').split(' ').filter(Boolean).slice(0, 2).map(n => n[0]).join('').toUpperCase()) || '?'}
                       </span>
                     </div>
                     <div className="min-w-0">

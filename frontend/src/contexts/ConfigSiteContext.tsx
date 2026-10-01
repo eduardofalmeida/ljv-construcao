@@ -18,7 +18,7 @@ export function ConfigSiteProvider({ children }: { children: React.ReactNode }) 
   const recarregar = useCallback(async () => {
     try {
       const { data } = await api.get<ConfigSite>('/config/site')
-      setConfig(data || {})
+      if (data && typeof data === 'object' && !Array.isArray(data)) setConfig(data)
     } catch {
       /* público: se falhar, usa fallback visual */
     } finally {
