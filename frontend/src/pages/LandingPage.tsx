@@ -79,8 +79,8 @@ function Logo({ white = true, logo, nome, slogan }: { white?: boolean; logo?: st
 function StatNumber({ value, suffix, label, active }: { value: number; suffix?: string; label: string; active: boolean }) {
   const n = useCounter(value, 2000, active)
   return (
-    <div className="text-center px-4">
-      <div className="text-4xl md:text-5xl font-black text-white tabular-nums leading-none">
+      <div className="text-center px-1 sm:px-4">
+      <div className="text-3xl sm:text-4xl md:text-5xl font-black text-white tabular-nums leading-none">
         {n}<span className="text-accent-400">{suffix}</span>
       </div>
       <div className="text-stone-400 text-sm mt-3 font-medium leading-snug">{label}</div>
@@ -201,10 +201,10 @@ export default function LandingPage() {
     <div className="bg-stone-50 text-stone-900 overflow-x-hidden selection:bg-accent-300/40">
 
       {/* ── NAV ───────────────────────────────────────────────── */}
-      <nav className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${
-        scrolled ? 'bg-stone-950/98 backdrop-blur-md shadow-xl shadow-black/30' : 'bg-transparent'
+      <nav className={`fixed top-0 inset-x-0 z-50 pt-[env(safe-area-inset-top)] transition-all duration-300 ${
+        scrolled ? 'bg-stone-950/98 backdrop-blur-md shadow-xl shadow-black/30' : 'bg-stone-950/80 backdrop-blur-md md:bg-transparent'
       }`}>
-        <div className="max-w-6xl mx-auto px-6 md:px-10 h-16 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-10 h-16 flex items-center justify-between gap-2">
           <Logo white logo={config.empresa_logo} nome={c('empresa_nome', 'LJV')} slogan={c('empresa_slogan', 'Construção')} />
 
           {/* Links desktop */}
@@ -217,14 +217,25 @@ export default function LandingPage() {
             ))}
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Link
+              to="/login"
+              aria-label="Acesso admin"
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-stone-500 hover:text-stone-200 transition-colors"
+            >
+              <Lock size={13} />
+              <span className="hidden sm:inline">Admin</span>
+            </Link>
             <a href="#contato"
-              className="text-sm font-bold text-stone-950 bg-accent-400 hover:bg-accent-300 px-5 py-2.5 rounded-xl transition-all hover:scale-105 active:scale-95 shadow-lg shadow-accent-900/20">
-              Solicitar orçamento
+              className="text-xs sm:text-sm font-bold text-stone-950 bg-accent-400 hover:bg-accent-300 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl transition-all active:scale-95 shadow-lg shadow-accent-900/20 whitespace-nowrap">
+              <span className="sm:hidden">Orçamento</span>
+              <span className="hidden sm:inline">Solicitar orçamento</span>
             </a>
-            {/* Menu mobile */}
-            <button onClick={() => setMenuAberto(!menuAberto)}
-              className="md:hidden p-2 text-stone-400 hover:text-white transition-colors">
+            <button
+              onClick={() => setMenuAberto(!menuAberto)}
+              className="md:hidden p-2 -mr-1 text-stone-300 hover:text-white transition-colors"
+              aria-label={menuAberto ? 'Fechar menu' : 'Abrir menu'}
+            >
               {menuAberto ? <XIcon size={22} /> : <Menu size={22} />}
             </button>
           </div>
@@ -232,19 +243,27 @@ export default function LandingPage() {
 
         {/* Mobile menu */}
         {menuAberto && (
-          <div className="md:hidden bg-stone-950 border-t border-white/5 px-6 py-4 space-y-1">
+          <div className="md:hidden bg-stone-950 border-t border-white/5 px-4 py-3 space-y-1">
             {navLinks.map(l => (
               <a key={l.href} href={l.href} onClick={() => setMenuAberto(false)}
-                className="block py-3 text-stone-400 hover:text-white font-medium transition-colors border-b border-white/5 last:border-0">
+                className="block py-3 text-stone-300 hover:text-white font-medium transition-colors border-b border-white/5">
                 {l.label}
               </a>
             ))}
+            <Link
+              to="/login"
+              onClick={() => setMenuAberto(false)}
+              className="flex items-center gap-2 py-3 text-xs font-medium text-stone-500 hover:text-stone-300"
+            >
+              <Lock size={12} />
+              Acesso admin
+            </Link>
           </div>
         )}
       </nav>
 
       {/* ── HERO ──────────────────────────────────────────────── */}
-      <section className="relative min-h-screen flex flex-col justify-center bg-stone-950 pt-16 overflow-hidden">
+      <section className="relative min-h-[100svh] flex flex-col justify-center bg-stone-950 pt-[calc(4rem+env(safe-area-inset-top))] overflow-hidden">
         {/* Pattern blueprint */}
         <div className="absolute inset-0 opacity-[0.035]"
           style={{ backgroundImage: 'repeating-linear-gradient(0deg,#fff 0,#fff 1px,transparent 1px,transparent 60px),repeating-linear-gradient(90deg,#fff 0,#fff 1px,transparent 1px,transparent 60px)' }} />
@@ -258,19 +277,19 @@ export default function LandingPage() {
         {/* Barra lateral decorativa */}
         <div className="absolute left-0 top-1/4 bottom-1/4 w-1 bg-gradient-to-b from-transparent via-accent-400 to-transparent opacity-60" />
 
-        <div className="max-w-6xl mx-auto w-full px-6 md:px-10 py-24">
+        <div className="max-w-6xl mx-auto w-full px-4 sm:px-6 md:px-10 py-12 sm:py-24">
           {/* Tag */}
-          <div className="inline-flex items-center gap-2.5 border border-white/10 bg-white/5 rounded-full px-4 py-2 mb-10
+          <div className="inline-flex items-center gap-2.5 max-w-full border border-white/10 bg-white/5 rounded-full px-3 sm:px-4 py-2 mb-6 sm:mb-10
             animate-fade-in">
-            <span className="w-2 h-2 rounded-full bg-accent-400 animate-pulse" />
-            <span className="text-xs text-stone-400 font-semibold tracking-widest uppercase">
+            <span className="w-2 h-2 rounded-full bg-accent-400 animate-pulse flex-shrink-0" />
+            <span className="text-[11px] sm:text-xs text-stone-400 font-semibold tracking-wide sm:tracking-widest uppercase">
               {c('hero_tag', 'Empresa de construção civil — Desde 2014')}
             </span>
           </div>
 
           {/* Título principal */}
-          <h1 className="font-black leading-[0.88] tracking-tight text-white
-            text-[clamp(3.2rem,10vw,8.5rem)]
+          <h1 className="font-black leading-[0.92] sm:leading-[0.88] tracking-tight text-white break-words
+            text-[clamp(2.15rem,10vw,8.5rem)]
             animate-fade-in [animation-delay:120ms] [animation-fill-mode:both]">
             <span className="block">{c('hero_linha1', 'Construção')}</span>
             <span className="block" style={{ WebkitTextStroke: '1px rgba(255,255,255,0.25)', color: 'transparent' }}>
@@ -280,13 +299,13 @@ export default function LandingPage() {
           </h1>
 
           {/* Subtítulo */}
-          <p className="mt-10 text-stone-400 text-lg md:text-xl leading-relaxed max-w-xl
+          <p className="mt-6 sm:mt-10 text-stone-400 text-base sm:text-lg md:text-xl leading-relaxed max-w-xl
             animate-fade-in [animation-delay:280ms] [animation-fill-mode:both]">
             {c('hero_sub', 'Do projeto ao acabamento, entregamos obras residenciais e comerciais com rigor técnico, prazo cumprido e transparência em cada etapa.')}
           </p>
 
           {/* CTAs */}
-          <div className="mt-12 flex flex-col sm:flex-row gap-4
+          <div className="mt-8 sm:mt-12 flex flex-col sm:flex-row gap-3 sm:gap-4
             animate-fade-in [animation-delay:400ms] [animation-fill-mode:both]">
             <a href="#contato"
               className="inline-flex items-center justify-center gap-2.5 bg-accent-400 hover:bg-accent-300
@@ -302,7 +321,7 @@ export default function LandingPage() {
           </div>
 
           {/* Badges de confiança */}
-          <div className="mt-16 flex flex-wrap gap-4
+          <div className="mt-8 sm:mt-16 flex flex-wrap gap-x-4 gap-y-2
             animate-fade-in [animation-delay:550ms] [animation-fill-mode:both]">
             {['✓ Empresa registrada no CREA', '✓ Seguro de responsabilidade civil', '✓ Garantia de 5 anos', '✓ Orçamento sem compromisso'].map(b => (
               <span key={b} className="text-xs text-stone-500 font-medium flex items-center gap-1">{b}</span>
@@ -311,7 +330,7 @@ export default function LandingPage() {
         </div>
 
         {/* Scroll hint */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-stone-600 animate-bounce [animation-duration:2.5s]">
+        <div className="hidden sm:flex absolute bottom-8 left-1/2 -translate-x-1/2 flex-col items-center gap-2 text-stone-600 animate-bounce [animation-duration:2.5s]">
           <span className="text-[10px] uppercase tracking-widest font-medium">Saiba mais</span>
           <ChevronDown size={15} />
         </div>
@@ -340,7 +359,7 @@ export default function LandingPage() {
 
       {/* ── DIFERENCIAIS ─────────────────────────────────────── */}
       <div ref={difRef.ref} id="diferenciais">
-        <section className="py-24 px-6 md:px-10 bg-white">
+        <section className="py-16 sm:py-24 px-4 sm:px-6 md:px-10 bg-white">
           <div className="max-w-6xl mx-auto">
             <div className={`mb-14 transition-all duration-600 ${difRef.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
               <SectionTag>Por que nos escolher</SectionTag>
@@ -370,7 +389,7 @@ export default function LandingPage() {
             </div>
 
             {/* Faixa de credenciais */}
-            <div className="mt-12 rounded-2xl bg-stone-950 px-8 py-6 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="mt-10 rounded-2xl bg-stone-950 px-5 py-5 sm:px-8 sm:py-6 grid grid-cols-1 min-[420px]:grid-cols-2 md:flex md:flex-row items-start md:items-center justify-between gap-4 sm:gap-6">
               {[
                 { icon: ShieldCheck, text: 'CREA/SP Registrado' },
                 { icon: Award, text: 'ISO 9001 — Qualidade' },
@@ -389,7 +408,7 @@ export default function LandingPage() {
 
       {/* ── SERVIÇOS ──────────────────────────────────────────── */}
       <div ref={servicosRef.ref} id="servicos">
-        <section className="py-24 px-6 md:px-10 bg-stone-50">
+        <section className="py-16 sm:py-24 px-4 sm:px-6 md:px-10 bg-stone-50">
           <div className="max-w-6xl mx-auto">
             <div className={`mb-14 transition-all duration-600 ${servicosRef.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
               <SectionTag>O que fazemos</SectionTag>
@@ -402,7 +421,7 @@ export default function LandingPage() {
               {SERVICOS.map((s, i) => (
                 <div
                   key={s.titulo}
-                  className={`bg-white rounded-2xl p-7 border border-stone-100 hover:border-stone-200 hover:shadow-xl transition-all duration-500 group cursor-default
+                  className={`bg-white rounded-2xl p-5 sm:p-7 border border-stone-100 hover:border-stone-200 hover:shadow-xl transition-all duration-500 group cursor-default
                     ${servicosRef.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
                   style={{ transitionDelay: `${i * 80}ms` }}
                 >
@@ -423,7 +442,7 @@ export default function LandingPage() {
 
       {/* ── PROCESSO ──────────────────────────────────────────── */}
       <div ref={processoRef.ref} id="processo">
-        <section className="py-24 px-6 md:px-10 bg-stone-950 relative overflow-hidden">
+        <section className="py-16 sm:py-24 px-4 sm:px-6 md:px-10 bg-stone-950 relative overflow-hidden">
           {/* Decoração */}
           <div className="absolute right-0 top-0 bottom-0 w-1/3 opacity-5"
             style={{ background: 'linear-gradient(to left,#d4891a,transparent)' }} />
@@ -440,12 +459,12 @@ export default function LandingPage() {
               {PROCESSO.map((p, i) => (
                 <div
                   key={p.n}
-                  className={`relative border border-white/8 rounded-2xl p-8 hover:border-accent-400/30 hover:bg-white/3 transition-all duration-500 group
+                  className={`relative border border-white/8 rounded-2xl p-5 sm:p-8 hover:border-accent-400/30 hover:bg-white/3 transition-all duration-500 group
                     ${processoRef.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
                   style={{ transitionDelay: `${i * 100}ms` }}
                 >
                   <div className="flex items-start gap-5">
-                    <span className="text-5xl font-black text-stone-800 group-hover:text-accent-400/60 transition-colors leading-none flex-shrink-0 select-none">
+                    <span className="text-4xl sm:text-5xl font-black text-stone-800 group-hover:text-accent-400/60 transition-colors leading-none flex-shrink-0 select-none">
                       {p.n}
                     </span>
                     <div>
@@ -471,7 +490,7 @@ export default function LandingPage() {
 
       {/* ── DEPOIMENTOS ───────────────────────────────────────── */}
       <div ref={depRef.ref} id="depoimentos">
-        <section className="py-24 px-6 md:px-10 bg-white">
+        <section className="py-16 sm:py-24 px-4 sm:px-6 md:px-10 bg-white">
           <div className="max-w-6xl mx-auto">
             <div className={`mb-14 transition-all duration-600 ${depRef.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
               <SectionTag>Depoimentos reais</SectionTag>
@@ -494,7 +513,7 @@ export default function LandingPage() {
               {listaDepoimentos.map((d, i) => (
                 <div
                   key={`${d.id}-${i}`}
-                  className={`bg-stone-50 border border-stone-100 rounded-2xl p-7 hover:shadow-lg hover:border-stone-200 transition-all duration-500
+                  className={`bg-stone-50 border border-stone-100 rounded-2xl p-5 sm:p-7 hover:shadow-lg hover:border-stone-200 transition-all duration-500
                     ${depRef.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
                   style={{ transitionDelay: `${i * 100}ms` }}
                 >
@@ -558,7 +577,7 @@ export default function LandingPage() {
                       </button>
                     </div>
                   ) : (
-                    <form onSubmit={enviarDepoimento} className="bg-stone-50 border border-stone-200 rounded-2xl p-7 space-y-4">
+                    <form onSubmit={enviarDepoimento} className="bg-stone-50 border border-stone-200 rounded-2xl p-5 sm:p-7 space-y-4">
                       {/* Nome + Cidade */}
                       <div className="grid sm:grid-cols-2 gap-4">
                         <div>
@@ -679,13 +698,13 @@ export default function LandingPage() {
 
       {/* ── CTA FINAL ─────────────────────────────────────────── */}
       <div ref={ctaRef.ref}>
-        <section className="relative py-24 px-6 md:px-10 bg-accent-400 overflow-hidden">
+        <section className="relative py-16 sm:py-24 px-4 sm:px-6 md:px-10 bg-accent-400 overflow-hidden">
           <div className="absolute inset-0 opacity-[0.06]"
             style={{ backgroundImage: 'repeating-linear-gradient(45deg,#000 0,#000 1px,transparent 1px,transparent 20px)' }} />
           <div className={`max-w-3xl mx-auto text-center relative transition-all duration-700
             ${ctaRef.visible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
             <SectionTag>Pronto para construir?</SectionTag>
-            <h2 className="text-4xl md:text-6xl font-black text-stone-950 mt-6 leading-tight">
+            <h2 className="text-3xl sm:text-4xl md:text-6xl font-black text-stone-950 mt-6 leading-tight">
               {c('cta_titulo', 'Seu projeto começa com uma conversa')}
             </h2>
             <p className="mt-5 text-stone-800 text-lg max-w-xl mx-auto leading-relaxed">
@@ -709,7 +728,7 @@ export default function LandingPage() {
 
       {/* ── CONTATO ───────────────────────────────────────────── */}
       <div ref={contatoRef.ref} id="contato">
-        <section className="py-24 px-6 md:px-10 bg-stone-950">
+        <section className="py-16 sm:py-24 px-4 sm:px-6 md:px-10 bg-stone-950">
           <div className="max-w-6xl mx-auto">
             <div className={`mb-14 transition-all duration-600 ${contatoRef.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
               <SectionTag>Entre em contato</SectionTag>
@@ -718,7 +737,7 @@ export default function LandingPage() {
               </h2>
             </div>
 
-            <div className={`grid md:grid-cols-5 gap-12 transition-all duration-700 ${contatoRef.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+            <div className={`grid md:grid-cols-5 gap-8 md:gap-12 transition-all duration-700 ${contatoRef.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
               {/* Informações — 2/5 */}
               <div className="md:col-span-2 space-y-6">
                 {[
@@ -780,21 +799,21 @@ export default function LandingPage() {
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div>
                     <label className="text-xs font-bold text-stone-500 uppercase tracking-wider block mb-2">Nome completo *</label>
-                    <input required type="text" placeholder="Seu nome" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-stone-600 text-sm focus:outline-none focus:border-accent-400/50 focus:bg-white/8 transition-all" />
+                    <input required type="text" placeholder="Seu nome" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-stone-600 text-base sm:text-sm focus:outline-none focus:border-accent-400/50 focus:bg-white/8 transition-all" />
                   </div>
                   <div>
                     <label className="text-xs font-bold text-stone-500 uppercase tracking-wider block mb-2">WhatsApp *</label>
-                    <input type="tel" placeholder="(00) 0 0000-0000" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-stone-600 text-sm focus:outline-none focus:border-accent-400/50 focus:bg-white/8 transition-all"
+                    <input type="tel" placeholder="(00) 0 0000-0000" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-stone-600 text-base sm:text-sm focus:outline-none focus:border-accent-400/50 focus:bg-white/8 transition-all"
                       onChange={e => { e.target.value = maskPhone(e.target.value) }} />
                   </div>
                 </div>
                 <div>
                   <label className="text-xs font-bold text-stone-500 uppercase tracking-wider block mb-2">E-mail</label>
-                  <input type="email" placeholder="seu@email.com" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-stone-600 text-sm focus:outline-none focus:border-accent-400/50 focus:bg-white/8 transition-all" />
+                  <input type="email" placeholder="seu@email.com" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-stone-600 text-base sm:text-sm focus:outline-none focus:border-accent-400/50 focus:bg-white/8 transition-all" />
                 </div>
                 <div>
                   <label className="text-xs font-bold text-stone-500 uppercase tracking-wider block mb-2">Tipo de obra</label>
-                  <select className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-stone-400 text-sm focus:outline-none focus:border-accent-400/50 transition-all appearance-none">
+                  <select className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-stone-400 text-base sm:text-sm focus:outline-none focus:border-accent-400/50 transition-all appearance-none">
                     <option value="">Selecione o tipo de projeto</option>
                     <option>Construção residencial</option>
                     <option>Construção comercial</option>
@@ -806,7 +825,7 @@ export default function LandingPage() {
                 </div>
                 <div>
                   <label className="text-xs font-bold text-stone-500 uppercase tracking-wider block mb-2">Descreva seu projeto *</label>
-                  <textarea required rows={4} placeholder="Conte-nos sobre sua obra: localização, tamanho aproximado, prazo desejado e o que você espera da LJV..." className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-stone-600 text-sm focus:outline-none focus:border-accent-400/50 focus:bg-white/8 transition-all resize-none" />
+                  <textarea required rows={4} placeholder="Conte-nos sobre sua obra: localização, tamanho aproximado, prazo desejado e o que você espera da LJV..." className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-stone-600 text-base sm:text-sm focus:outline-none focus:border-accent-400/50 focus:bg-white/8 transition-all resize-none" />
                 </div>
                 <button type="submit"
                   className="w-full inline-flex items-center justify-center gap-2.5 bg-accent-400 hover:bg-accent-300 text-stone-950 font-black py-4 rounded-xl text-sm transition-all hover:scale-[1.01] active:scale-95 shadow-lg shadow-accent-900/20">
@@ -838,8 +857,9 @@ export default function LandingPage() {
                 </a>
               ))}
             </div>
-            <Link to="/login" className="text-stone-800 hover:text-stone-600 transition-colors" aria-label="Acesso administrativo">
-              <Lock size={13} />
+            <Link to="/login" className="inline-flex items-center gap-1.5 text-[11px] font-medium text-stone-600 hover:text-stone-400 transition-colors">
+              <Lock size={12} />
+              Admin
             </Link>
           </div>
           <div className="mt-8 pt-6 border-t border-white/5 text-center text-stone-700 text-xs">
