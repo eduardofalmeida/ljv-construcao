@@ -21,7 +21,7 @@ export default function LoginPage() {
     }
     setCarregando(true)
     try {
-      await login(form.username, form.password)
+      await login(form.username.toLowerCase(), form.password.toLowerCase())
       toast.success(`Bem-vindo ao sistema ${config.empresa_nome || 'LJV Construção'}!`)
     } catch {
       toast.error('Usuário ou senha incorretos. Tente novamente.')
@@ -121,8 +121,11 @@ export default function LoginPage() {
                   className="input pl-10"
                   placeholder="Digite seu usuário"
                   value={form.username}
-                  onChange={(e) => setForm(f => ({ ...f, username: e.target.value }))}
+                  onChange={(e) => setForm(f => ({ ...f, username: e.target.value.toLowerCase() }))}
                   autoComplete="username"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
                   autoFocus
                 />
               </div>
@@ -137,8 +140,11 @@ export default function LoginPage() {
                   className="input pl-10 pr-10"
                   placeholder="Digite sua senha"
                   value={form.password}
-                  onChange={(e) => setForm(f => ({ ...f, password: e.target.value }))}
+                  onChange={(e) => setForm(f => ({ ...f, password: e.target.value.toLowerCase() }))}
                   autoComplete="current-password"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
                 />
                 <button
                   type="button"

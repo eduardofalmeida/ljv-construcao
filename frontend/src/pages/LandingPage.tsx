@@ -101,12 +101,14 @@ function Zap({
   children,
   onMouseEnter,
   onMouseLeave,
+  onClick,
 }: {
   mensagem: string
   className?: string
   children: React.ReactNode
   onMouseEnter?: () => void
   onMouseLeave?: () => void
+  onClick?: () => void
 }) {
   return (
     <a
@@ -118,6 +120,7 @@ function Zap({
       onMouseLeave={onMouseLeave}
       onClick={e => {
         e.preventDefault()
+        onClick?.()
         openWhatsApp(mensagem)
       }}
     >
@@ -389,7 +392,7 @@ export default function LandingPage() {
   const fecharMenu = () => setMenuAberto(false)
 
   return (
-    <div className={`lp${pronta ? ' is-pronta' : ''}${fino ? ' is-cursor' : ''}`} data-tier={qualidade} data-hero={heroOn ? '1' : '0'}>
+    <div className={`lp${pronta ? ' is-pronta' : ''}${fino ? ' is-cursor' : ''}${menuAberto ? ' is-menu' : ''}`} data-tier={qualidade} data-hero={heroOn ? '1' : '0'}>
       <a className="lp-skip" href="#conteudo">Ir ao conteúdo</a>
       {fino && <div ref={cursorRef} className="lp-cursor" aria-hidden="true" />}
 
@@ -417,9 +420,13 @@ export default function LandingPage() {
 
       {menuAberto && (
         <nav id="menu-mobile" className="lp-menu" aria-label="Menu">
-          {NAV.map(item => <a key={item.href} href={item.href} onClick={fecharMenu}>{item.label}</a>)}
-          <Zap mensagem={MENSAGENS.orcamento} className="lp-btn" >Solicitar orçamento</Zap>
-          <Link to="/login" className="lp-admin" onClick={fecharMenu}><Lock size={14} /> Admin</Link>
+          <div className="lp-menu-lista">
+            {NAV.map(item => <a key={item.href} href={item.href} onClick={fecharMenu}>{item.label}</a>)}
+          </div>
+          <div className="lp-menu-acoes">
+            <Zap mensagem={MENSAGENS.orcamento} className="lp-btn" onClick={fecharMenu}>Solicitar orçamento</Zap>
+            <Link to="/login" className="lp-admin" onClick={fecharMenu}><Lock size={14} /> Admin</Link>
+          </div>
         </nav>
       )}
 
