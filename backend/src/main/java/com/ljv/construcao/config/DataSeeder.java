@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Map;
@@ -26,6 +27,17 @@ public class DataSeeder {
 
     @Value("${app.dev.seed-data:true}")
     private boolean seedData;
+
+    @Bean
+    public CommandLineRunner ampliarFotoPerfil(JdbcTemplate jdbc) {
+        return args -> {
+            try {
+                jdbc.execute("ALTER TABLE usuarios ALTER COLUMN foto_perfil TYPE TEXT");
+            } catch (Exception e) {
+                log.warn("Não foi possível ampliar a coluna da foto de perfil: {}", e.getMessage());
+            }
+        };
+    }
 
     @Bean
     public CommandLineRunner seedDatabase() {

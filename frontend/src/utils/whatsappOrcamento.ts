@@ -2,9 +2,9 @@ import type { Orcamento, OrcamentoCliente } from '../types'
 import type { ConfigMap } from './dadosRelatorio'
 import { montarDadosRelatorio } from './dadosRelatorio'
 import { gerarArquivoPdfOrcamento } from './orcamentoPDF'
-import { enviarArquivoWhatsApp, telefoneWhatsApp } from './whatsapp'
+import { abrirWhatsApp, enviarArquivoWhatsApp, telefoneWhatsApp } from './whatsapp'
 
-export { telefoneWhatsApp }
+export { telefoneWhatsApp, abrirWhatsApp }
 
 export function montarMensagemWhatsApp(orc: Orcamento, empresa: ConfigMap = {}) {
   const d = montarDadosRelatorio(empresa)
@@ -28,7 +28,11 @@ export function montarMensagemWhatsApp(orc: Orcamento, empresa: ConfigMap = {}) 
   ].filter(linha => linha !== undefined).join('\n').replace(/\n{3,}/g, '\n\n')
 }
 
-export async function enviarOrcamentoWhatsApp(orc: Orcamento, empresa: ConfigMap = {}) {
+export function mensagemEnvioOrcamento(orc: Orcamento, empresa: ConfigMap = {}) {
+  return `${montarMensagemWhatsApp(orc, empresa)}\n\nAnexe o PDF que acabou de ser baixado neste aparelho.`
+}
+
+export async function enviarOrcamentoWhatsApp(orc: Orcamento, empresa: ConfigMap = {}, conversaAberta = false) {
   const tel = telefoneWhatsApp(orc.cliente as OrcamentoCliente)
   if (!tel) {
     throw new Error('Cadastre o celular ou telefone do cliente para enviar no WhatsApp.')
@@ -39,5 +43,6 @@ export async function enviarOrcamentoWhatsApp(orc: Orcamento, empresa: ConfigMap
     file,
     texto: montarMensagemWhatsApp(orc, empresa),
     titulo: `${orc.numero || 'Orçamento'} — ${orc.titulo}`,
+    conversaAberta,
   })
 }

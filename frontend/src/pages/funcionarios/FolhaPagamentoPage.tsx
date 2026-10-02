@@ -12,9 +12,9 @@ import toast from 'react-hot-toast'
 import Modal from '../../components/ui/Modal'
 import { maskCurrency } from '../../utils/masks'
 import { useConfigSite } from '../../contexts/ConfigSiteContext'
+import { useAuth } from '../../contexts/AuthContext'
 import { montarDadosRelatorio } from '../../utils/dadosRelatorio'
-import { imprimirFolhaIndividual, enviarFolhaWhatsApp } from '../../utils/folhaPDF'
-import { telefoneWhatsApp } from '../../utils/whatsapp'
+import { imprimirFolhaIndividual, enviarFolhaWhatsApp, mensagemFolhaWhatsApp, abrirWhatsApp, telefoneWhatsApp, resumoDescontos } from '../../utils/folhaPDF'
 
 // ─── Constantes e helpers ──────────────────────────────────────
 
@@ -793,6 +793,8 @@ function AbaControle() {
 // ─── Aba: Relatório de Folha ────────────────────────────────────
 function AbaRelatorio() {
   const { config } = useConfigSite()
+  const { usuario } = useAuth()
+  const empresaRelatorio = { ...config, foto_perfil: usuario?.fotoPerfil || '' }
   const hoje = new Date()
   const [inicio, setInicio] = useState(
     `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-01`
@@ -840,7 +842,7 @@ function AbaRelatorio() {
   const optsIndividual = (linha: RelatorioFuncionarioLinha) => ({
     linha,
     relatorio: relatorio!,
-    empresa: config,
+    empresa: empresaRelatorio,
     cargoLabel: CARGOS[linha.funcionario.cargo] || linha.funcionario.cargo,
     tipoLabel: TIPO_LABEL[linha.funcionario.tipoRecebimento] || linha.funcionario.tipoRecebimento,
   })
@@ -856,14 +858,12 @@ function AbaRelatorio() {
       toast.error('Cadastre o celular do funcionário para enviar no WhatsApp.')
       return
     }
+    const tel = telefoneWhatsApp(linha.funcionario)
+    abrirWhatsApp(tel, mensagemFolhaWhatsApp(optsIndividual(linha)))
     setEnviandoId(linha.funcionario.id)
     try {
-      const modo = await enviarFolhaWhatsApp(optsIndividual(linha))
-      toast.success(
-        modo === 'compartilhado'
-          ? 'Escolha o WhatsApp na lista para enviar o PDF em anexo.'
-          : 'WhatsApp aberto. Anexe o PDF que acabou de ser baixado na conversa.'
-      )
+      await enviarFolhaWhatsApp(optsIndividual(linha), true)
+      toast.success('WhatsApp aberto na conversa do funcionário. Anexe o PDF que acabou de ser baixado.')
     } catch (err) {
       if ((err as Error).name === 'AbortError') return
       toast.error((err as Error).message || 'Não foi possível enviar no WhatsApp')
@@ -876,7 +876,7 @@ function AbaRelatorio() {
     if (!relatorio) return
     const win = window.open('', '_blank')
     if (!win) return
-    const d = montarDadosRelatorio(config)
+    const d = montarDadosRelatorio(empresaRelatorio)
     const periodo = `${fmtData(relatorio.periodo.inicio)} a ${fmtData(relatorio.periodo.fim)}`
     const cabecalhoContato = [d.documentos.join(' · '), ...d.contatoLinhas].filter(Boolean).join('<br/>')
     const logoHTML = d.logo
@@ -897,11 +897,13 @@ function AbaRelatorio() {
         };">${cfg.short} ${fmtData(r.data)}${r.motivo ? ' · ' + r.motivo : ''}${r.descontar === false && r.status !== 'TRABALHADO' ? ' (sem desc.)' : ''}</span>`
       }).join(' ')
 
+      const desconto = resumoDescontos(f)
       return `
         <tr style="border-bottom:1px solid #eee; vertical-align:top;">
           <td style="padding:10px 8px;">
             <strong>${f.funcionario.nome}</strong><br>
-            <small style="color:#666;">${CARGOS[f.funcionario.cargo] || f.funcionario.cargo}</small>
+            <small style="color:#666;">${CARGOS[f.funcionario.cargo] || f.funcionario.cargo}</small><br>
+            <small style="color:${desconto.houve ? '#991b1b' : '#166534'};">${desconto.texto}</small>
           </td>
           <td style="padding:10px 8px; text-align:center;">${TIPO_LABEL[f.funcionario.tipoRecebimento]}</td>
           <td style="padding:10px 8px; text-align:center;">${f.diasUteisNoPeriodo}</td>
@@ -912,11 +914,12 @@ function AbaRelatorio() {
           <td style="padding:10px 8px; text-align:center; color:${f.faltasADescontar > 0 ? '#ea580c' : '#999'};">${f.faltasADescontar > 0 ? f.faltasADescontar : '—'}</td>
           <td style="padding:10px 8px; text-align:right;">${fmt(f.valorBruto)}<br><small style="color:#888;font-weight:400">${f.diasTrabalhados}d × ${fmt(f.valorDia || f.funcionario.valorDiaria)}</small></td>
           <td style="padding:10px 8px; text-align:right; color:#ea580c;">${(f.valesPendentes || f.valesNoPeriodo || 0) > 0 ? '- ' + fmt(f.valesPendentes ?? f.valesNoPeriodo ?? 0) : '—'}</td>
-          <td style="padding:10px 8px; text-align:right; color:#dc2626;">${f.descontos > 0 ? '- ' + fmt(f.descontos) : '—'}</td>
+          <td style="padding:10px 8px; text-align:right; color:#dc2626;">${desconto.faltas > 0 ? '- ' + fmt(desconto.faltas) : 'Não houve'}</td>
+          <td style="padding:10px 8px; text-align:right; color:#dc2626;">${desconto.outros > 0 ? '- ' + fmt(desconto.outros) : 'Não houve'}</td>
           <td style="padding:10px 8px; text-align:right; font-weight:900; color:#166534;">${fmt(aReceberLinha(f))}</td>
         </tr>
         ${regs ? `<tr style="border-bottom:2px solid #eee; background:#fafaf8;">
-          <td colspan="12" style="padding:6px 8px 10px 8px;">
+          <td colspan="13" style="padding:6px 8px 10px 8px;">
             <div style="font-size:11px;color:#999;margin-bottom:4px;">Registros marcados:</div>
             <div style="display:flex;flex-wrap:wrap;gap:4px;">${regs}</div>
           </td>
@@ -965,21 +968,23 @@ function AbaRelatorio() {
         <div class="card"><div class="card-label">Funcionários</div><div class="card-val">${relatorio.totalFuncionarios}</div></div>
         <div class="card"><div class="card-label">Total bruto</div><div class="card-val">${fmt(relatorio.totalBruto)}</div></div>
         <div class="card"><div class="card-label">Vales (adiant.)</div><div class="card-val" style="color:#ea580c">${fmt(relatorio.totalValesPendentes ?? relatorio.totalVales ?? 0)}</div></div>
-        <div class="card"><div class="card-label">Desc. faltas</div><div class="card-val" style="color:#dc2626">${fmt(relatorio.totalDescontos)}</div></div>
+        <div class="card"><div class="card-label">Desconto por faltas</div><div class="card-val" style="color:#dc2626">${relatorio.totalDescontos > 0 ? fmt(relatorio.totalDescontos) : 'Não houve'}</div></div>
+        <div class="card"><div class="card-label">Outros descontos</div><div class="card-val" style="color:#dc2626">${(relatorio.totalDescontosAvulsos || 0) > 0 ? fmt(relatorio.totalDescontosAvulsos) : 'Não houve'}</div></div>
         <div class="card"><div class="card-label">Total a pagar</div><div class="card-val" style="color:#166534">${fmt(relatorio.totalAPagar ?? relatorio.totalLiquido)}</div></div>
       </div>
       <table>
         <thead><tr>
           <th>Funcionário</th><th>Tipo</th><th>Dias úteis</th><th>Trabalhados</th>
           <th>Extras (FdS)</th><th>Faltas</th><th>Justif.</th><th>A desc.</th>
-          <th>Bruto</th><th>Vale</th><th>Desc. faltas</th><th>A receber</th>
+          <th>Bruto</th><th>Vale</th><th>Desconto por faltas</th><th>Outros descontos</th><th>A receber</th>
         </tr></thead>
         <tbody>${linhas}</tbody>
         <tfoot><tr>
           <td colspan="8">TOTAL GERAL</td>
           <td style="text-align:right">${fmt(relatorio.totalBruto)}</td>
           <td style="text-align:right;color:#ea580c">- ${fmt(relatorio.totalValesPendentes ?? relatorio.totalVales ?? 0)}</td>
-          <td style="text-align:right;color:#dc2626">- ${fmt(relatorio.totalDescontos)}</td>
+          <td style="text-align:right;color:#dc2626">${relatorio.totalDescontos > 0 ? '- ' + fmt(relatorio.totalDescontos) : 'Não houve'}</td>
+          <td style="text-align:right;color:#dc2626">${(relatorio.totalDescontosAvulsos || 0) > 0 ? '- ' + fmt(relatorio.totalDescontosAvulsos) : 'Não houve'}</td>
           <td style="text-align:right;color:#166534;font-size:15px">${fmt(relatorio.totalAPagar ?? relatorio.totalLiquido)}</td>
         </tr></tfoot>
       </table>
@@ -1075,12 +1080,13 @@ function AbaRelatorio() {
             </p>
           </div>
           {/* Cards de resumo */}
-          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
             {[
               { label: 'Funcionários', val: String(relatorio.totalFuncionarios), icon: Users, cor: 'bg-blue-500' },
               { label: 'Total bruto', val: fmt(relatorio.totalBruto), icon: DollarSign, cor: 'bg-primary-800' },
               { label: 'Vales (adiant.)', val: fmt(relatorio.totalValesPendentes ?? relatorio.totalVales ?? 0), icon: CreditCard, cor: 'bg-orange-500' },
-              { label: 'Desc. faltas', val: fmt(relatorio.totalDescontos), icon: TrendingDown, cor: 'bg-red-500' },
+              { label: 'Desconto por faltas', val: relatorio.totalDescontos > 0 ? fmt(relatorio.totalDescontos) : 'Não houve', icon: TrendingDown, cor: 'bg-red-500' },
+              { label: 'Outros descontos', val: (relatorio.totalDescontosAvulsos || 0) > 0 ? fmt(relatorio.totalDescontosAvulsos) : 'Não houve', icon: TrendingDown, cor: 'bg-rose-700' },
               { label: 'Total a pagar', val: fmt(relatorio.totalAPagar ?? relatorio.totalLiquido), icon: CheckCircle, cor: 'bg-emerald-600' },
             ].map(c => (
               <div key={c.label} className="card p-4 sm:p-5 h-full flex flex-col">
@@ -1129,12 +1135,9 @@ function AbaRelatorio() {
                 {expandido === i && (
                   <div className="mt-3 pt-3 border-t border-stone-100 text-xs text-primary-600 space-y-1">
                     <p>{linha.diasTrabalhados}d × {fmt(linha.valorDia || linha.funcionario.valorDiaria)} = {fmt(linha.valorBruto)}</p>
-                    {linha.descontos > 0 && <p className="text-red-500">Desc. faltas: − {fmt(linha.descontos)}</p>}
+                    <p className={resumoDescontos(linha).houve ? 'text-red-600 font-semibold' : 'text-emerald-700'}>{resumoDescontos(linha).texto}</p>
                     {(linha.valesPendentes || 0) > 0 && (
                       <p className="text-orange-600">Vale (adiantamento): − {fmt(linha.valesPendentes)}</p>
-                    )}
-                    {(linha.descontosAvulsos || 0) > 0 && (
-                      <p className="text-red-500">Descontos avulsos: − {fmt(linha.descontosAvulsos)}</p>
                     )}
                     <p className="font-bold text-emerald-700">A receber: {fmt(aReceberLinha(linha))}</p>
                   </div>
@@ -1168,7 +1171,7 @@ function AbaRelatorio() {
               <table className="w-full text-sm">
                 <thead className="bg-stone-50">
                   <tr>
-                    {['Funcionário','Tipo','Dias úteis','Trabalhados','Extras','Faltas','Justif.','A descontar','Bruto','Vale','Desc. faltas','A receber','Ações'].map(h => (
+                    {['Funcionário','Tipo','Dias úteis','Trabalhados','Extras','Faltas','Justif.','A descontar','Bruto','Vale','Desconto por faltas','Outros descontos','A receber','Ações'].map(h => (
                       <th key={h} className="px-3 py-3 text-xs font-bold text-primary-400 uppercase tracking-wider whitespace-nowrap text-left first:pl-5 last:pr-5 last:text-right">
                         {h}
                       </th>
@@ -1242,7 +1245,12 @@ function AbaRelatorio() {
                         <td className="px-3 py-4 text-right">
                           {linha.descontos > 0
                             ? <span className="text-red-500 font-semibold">− {fmt(linha.descontos)}</span>
-                            : <span className="text-primary-300">—</span>}
+                            : <span className="text-emerald-700 text-xs font-semibold">Não houve</span>}
+                        </td>
+                        <td className="px-3 py-4 text-right">
+                          {(linha.descontosAvulsos || 0) > 0
+                            ? <span className="text-red-500 font-semibold">− {fmt(linha.descontosAvulsos)}</span>
+                            : <span className="text-emerald-700 text-xs font-semibold">Não houve</span>}
                         </td>
                         <td className="pr-5 pl-3 py-4 text-right font-black text-emerald-600 text-base">{fmt(aReceberLinha(linha))}</td>
                         <td className="px-3 py-4" onClick={e => e.stopPropagation()}>
@@ -1270,10 +1278,10 @@ function AbaRelatorio() {
 
                       {expandido === i && (
                         <tr className="bg-stone-50/80">
-                          <td colSpan={13} className="px-5 py-4">
+                          <td colSpan={14} className="px-5 py-4">
                             <div className="text-xs font-bold text-primary-700 mb-2">
                               {linha.diasTrabalhados} dias × {fmt(linha.valorDia || linha.funcionario.valorDiaria)} = {fmt(linha.valorBruto)}
-                              {linha.descontos > 0 ? ` · faltas − ${fmt(linha.descontos)}` : ''}
+                              {' · '}{resumoDescontos(linha).texto}
                               {(linha.valesPendentes || 0) > 0 ? ` · vale (adiant.) − ${fmt(linha.valesPendentes)}` : ''}
                               {' · a receber '}{fmt(aReceberLinha(linha))}
                             </div>
@@ -1319,7 +1327,10 @@ function AbaRelatorio() {
                       {(relatorio.totalValesPendentes ?? 0) > 0 ? `− ${fmt(relatorio.totalValesPendentes)}` : '—'}
                     </td>
                     <td className="px-3 py-4 text-right font-bold text-red-300">
-                      {relatorio.totalDescontos > 0 ? `− ${fmt(relatorio.totalDescontos)}` : '—'}
+                      {relatorio.totalDescontos > 0 ? `− ${fmt(relatorio.totalDescontos)}` : 'Não houve'}
+                    </td>
+                    <td className="px-3 py-4 text-right font-bold text-red-300">
+                      {(relatorio.totalDescontosAvulsos || 0) > 0 ? `− ${fmt(relatorio.totalDescontosAvulsos)}` : 'Não houve'}
                     </td>
                     <td className="pr-5 pl-3 py-4 text-right font-black text-emerald-300 text-base">{fmt(relatorio.totalAPagar ?? relatorio.totalLiquido)}</td>
                     <td />

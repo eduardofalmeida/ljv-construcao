@@ -6,13 +6,14 @@ import {
 } from 'lucide-react'
 import api from '../../services/api'
 import { imprimirOrcamento } from '../../utils/orcamentoPDF'
-import { enviarOrcamentoWhatsApp, telefoneWhatsApp } from '../../utils/whatsappOrcamento'
+import { abrirWhatsApp, enviarOrcamentoWhatsApp, mensagemEnvioOrcamento, telefoneWhatsApp } from '../../utils/whatsappOrcamento'
 import { statusOrcamento, STATUS_RESPOSTA } from '../../utils/orcamentoStatus'
 import type { Orcamento, OrcamentoResumo, Page, StatusOrcamento } from '../../types'
 import Modal from '../../components/ui/Modal'
 import ConfirmDialog from '../../components/ui/ConfirmDialog'
 import FormOrcamento from './FormOrcamento'
 import { useConfigSite } from '../../contexts/ConfigSiteContext'
+import { useAuth } from '../../contexts/AuthContext'
 import { useAbrirNovo } from '../../hooks/useAbrirNovo'
 import toast from 'react-hot-toast'
 
@@ -50,6 +51,8 @@ function hojeISOPlus(dias: number) {
 
 export default function OrcamentosPage() {
   const { config } = useConfigSite()
+  const { usuario } = useAuth()
+  const empresaRelatorio = { ...config, foto_perfil: usuario?.fotoPerfil || '' }
   const [orcamentos, setOrcamentos] = useState<Orcamento[]>([])
   const [resumo, setResumo] = useState<OrcamentoResumo | null>(null)
   const [total, setTotal] = useState(0)
@@ -110,7 +113,7 @@ export default function OrcamentosPage() {
   const gerarRelatorio = async (orc: Orcamento) => {
     try {
       const { data } = await api.get<Orcamento>(`/orcamentos/${orc.id}`)
-      imprimirOrcamento(data, config)
+      imprimirOrcamento(data, empresaRelatorio)
     } catch {
       toast.error('Erro ao gerar relatório')
     }
@@ -127,17 +130,15 @@ export default function OrcamentosPage() {
       abrirEdicao(orc)
       return
     }
+    const tel = telefoneWhatsApp(orc.cliente)
+    abrirWhatsApp(tel, mensagemEnvioOrcamento(orc, empresaRelatorio))
     setEnviandoId(orc.id)
     try {
       const { data } = await api.get<Orcamento>(`/orcamentos/${orc.id}`)
-      const modo = await enviarOrcamentoWhatsApp(data, config)
+      await enviarOrcamentoWhatsApp(data, empresaRelatorio, true)
       await marcarEnviado(orc.id)
       recarregarTudo()
-      toast.success(
-        modo === 'compartilhado'
-          ? 'Escolha o WhatsApp na lista para enviar o PDF em anexo.'
-          : 'WhatsApp aberto. Anexe o PDF que acabou de ser baixado na conversa.'
-      )
+      toast.success('WhatsApp aberto na conversa do cliente. Anexe o PDF que acabou de ser baixado.')
     } catch (err) {
       if ((err as Error).name === 'AbortError') return
       toast.error((err as Error).message || 'Não foi possível enviar no WhatsApp')

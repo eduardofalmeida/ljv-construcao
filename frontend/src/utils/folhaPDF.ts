@@ -1,7 +1,7 @@
 import { jsPDF } from 'jspdf'
 import type { RelatorioFuncionarioLinha, RelatorioFolha } from '../types'
 import { montarDadosRelatorio, type ConfigMap } from './dadosRelatorio'
-import { enviarArquivoWhatsApp, telefoneWhatsApp } from './whatsapp'
+import { abrirWhatsApp, enviarArquivoWhatsApp, telefoneWhatsApp } from './whatsapp'
 
 function fmt(v?: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(v) || 0)
@@ -31,6 +31,26 @@ function periodoTxt(relatorio: RelatorioFolha) {
   return `${fmtData(relatorio.periodo.inicio)} a ${fmtData(relatorio.periodo.fim)}`
 }
 
+export function resumoDescontos(linha: Pick<RelatorioFuncionarioLinha, 'descontos' | 'descontosAvulsos' | 'faltasADescontar'>) {
+  const faltas = linha.descontos || 0
+  const outros = linha.descontosAvulsos || 0
+  const total = faltas + outros
+  if (total <= 0) {
+    return { houve: false, faltas, outros, total, texto: 'Não houve descontos neste período.' }
+  }
+  const partes = [
+    faltas > 0 ? `desconto por faltas de ${fmt(faltas)} (${linha.faltasADescontar} dia${linha.faltasADescontar === 1 ? '' : 's'})` : '',
+    outros > 0 ? `outros descontos de ${fmt(outros)}` : '',
+  ].filter(Boolean)
+  return {
+    houve: true,
+    faltas,
+    outros,
+    total,
+    texto: `Houve desconto: ${partes.join(' e ')}. Total descontado: ${fmt(total)}.`,
+  }
+}
+
 function nomeArquivo(linha: RelatorioFuncionarioLinha, relatorio: RelatorioFolha) {
   const nome = (linha.funcionario.nome || 'funcionario').replace(/[^\w.-]+/g, '_').slice(0, 40)
   const ini = (relatorio.periodo.inicio || '').replace(/-/g, '')
@@ -52,6 +72,7 @@ export function imprimirFolhaIndividual(opts: FolhaIndividualOpts) {
   if (!win) return
   const { linha, relatorio, empresa = {}, cargoLabel, tipoLabel } = opts
   const { d, contato, logo } = htmlCabecalho(empresa)
+  const desconto = resumoDescontos(linha)
   const f = linha.funcionario
   const regs = (linha.registros || []).map(r => {
     const semDesc = r.descontar === false && r.status !== 'TRABALHADO'
@@ -101,7 +122,8 @@ export function imprimirFolhaIndividual(opts: FolhaIndividualOpts) {
         ['Faltas', String(linha.faltasTotal)],
         ['Valor do dia', fmt(linha.valorDia || f.valorDiaria)],
         ['Bruto', fmt(linha.valorBruto)],
-        ['Desc. faltas', fmt(linha.descontos)],
+        ['Desconto por faltas', desconto.faltas > 0 ? '− ' + fmt(desconto.faltas) : 'Não houve'],
+        ['Outros descontos', desconto.outros > 0 ? '− ' + fmt(desconto.outros) : 'Não houve'],
         ['Vale (adiant.)', (linha.valesPendentes || 0) > 0 ? '− ' + fmt(linha.valesPendentes) : '—'],
         ['A receber', fmt(linha.aReceber ?? Math.max(0, linha.valorLiquido - (linha.valesPendentes || 0) - (linha.descontosAvulsos || 0) - (linha.pagamentosJaFeitos || 0)))],
       ].map(([l, v]) => `<div style="background:#f9f9f7;border:1px solid #e8e8e0;border-radius:12px;padding:12px 16px;min-width:120px">
@@ -111,10 +133,11 @@ export function imprimirFolhaIndividual(opts: FolhaIndividualOpts) {
     </div>
     <p style="font-size:12px;color:#666;margin-bottom:16px">
       ${linha.diasTrabalhados} dias × ${fmt(linha.valorDia || f.valorDiaria)} = ${fmt(linha.valorBruto)}
-      ${linha.descontos > 0 ? ` · desc. faltas − ${fmt(linha.descontos)}` : ''}
       ${(linha.valesPendentes || 0) > 0 ? ` · vale (adiantamento já recebido) − ${fmt(linha.valesPendentes)}` : ''}
-      ${(linha.descontosAvulsos || 0) > 0 ? ` · descontos − ${fmt(linha.descontosAvulsos)}` : ''}
     </p>
+    <div style="background:${desconto.houve ? '#fef2f2' : '#f0fdf4'};border:1px solid ${desconto.houve ? '#fecaca' : '#bbf7d0'};border-radius:12px;padding:12px 16px;margin-bottom:20px;font-size:13px;color:${desconto.houve ? '#991b1b' : '#166534'}">
+      <strong>${desconto.houve ? 'Descontos deste período' : 'Descontos'}:</strong> ${desconto.texto}
+    </div>
     ${(linha.valesPendentes || linha.valesNoPeriodo || 0) > 0 ? `
     <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;padding:12px 16px;margin-bottom:20px;font-size:12px;color:#9a3412">
       <strong>Vale = adiantamento:</strong> parte do pagamento (${tipoLabel.toLowerCase()}) já entregue ao funcionário antes do fechamento do ciclo.
@@ -196,6 +219,7 @@ export async function gerarPdfFolhaIndividual(opts: FolhaIndividualOpts): Promis
   const aReceber = linha.aReceber ?? Math.max(0,
     linha.valorLiquido - (linha.valesPendentes || 0) - (linha.descontosAvulsos || 0) - (linha.pagamentosJaFeitos || 0)
   )
+  const desconto = resumoDescontos(linha)
 
   const cards: [string, string][] = [
     ['Trabalhados', `${linha.diasTrabalhados}d`],
@@ -203,7 +227,8 @@ export async function gerarPdfFolhaIndividual(opts: FolhaIndividualOpts): Promis
     ['Faltas', String(linha.faltasTotal)],
     ['Valor do dia', fmt(linha.valorDia || f.valorDiaria)],
     ['Bruto', fmt(linha.valorBruto)],
-    ['Desc. faltas', fmt(linha.descontos)],
+    ['Desconto por faltas', desconto.faltas > 0 ? `− ${fmt(desconto.faltas)}` : 'Não houve'],
+    ['Outros descontos', desconto.outros > 0 ? `− ${fmt(desconto.outros)}` : 'Não houve'],
     ['Vale (adiant.)', (linha.valesPendentes || 0) > 0 ? `− ${fmt(linha.valesPendentes)}` : '—'],
     ['A receber', fmt(aReceber)],
   ]
@@ -230,11 +255,19 @@ export async function gerarPdfFolhaIndividual(opts: FolhaIndividualOpts): Promis
   doc.setTextColor(55, 65, 81)
   const formula = [
     `${linha.diasTrabalhados} dias × ${fmt(linha.valorDia || f.valorDiaria)} = ${fmt(linha.valorBruto)}`,
-    linha.descontos ? `faltas − ${fmt(linha.descontos)}` : '',
     (linha.valesPendentes || 0) > 0 ? `vale (adiant.) − ${fmt(linha.valesPendentes)}` : '',
   ].filter(Boolean).join('  ·  ')
   doc.text(formula, m, y)
   y += 6
+  garantir(10)
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(9)
+  if (desconto.houve) doc.setTextColor(153, 27, 27)
+  else doc.setTextColor(22, 101, 52)
+  const avisoDesc = doc.splitTextToSize(desconto.texto, pageW - m * 2)
+  doc.text(avisoDesc, m, y)
+  doc.setFont('helvetica', 'normal')
+  y += avisoDesc.length * 4 + 4
   if ((linha.valesPendentes || linha.valesNoPeriodo || 0) > 0) {
     garantir(12)
     doc.setFontSize(8)
@@ -313,29 +346,37 @@ export async function gerarPdfFolhaIndividual(opts: FolhaIndividualOpts): Promis
   return new File([blob], nomeArquivo(linha, relatorio), { type: 'application/pdf' })
 }
 
-export async function enviarFolhaWhatsApp(opts: FolhaIndividualOpts) {
+export function mensagemFolhaWhatsApp(opts: FolhaIndividualOpts) {
   const { linha, empresa = {} } = opts
-  if (!telefoneWhatsApp(linha.funcionario)) {
-    throw new Error('Cadastre o celular do funcionário para enviar no WhatsApp.')
-  }
   const d = montarDadosRelatorio(empresa)
-  const file = await gerarPdfFolhaIndividual(opts)
-  const texto = [
+  return [
     `Olá, ${linha.funcionario.nome}!`,
     '',
     `Segue o relatório da sua folha de pagamento.`,
     `Período: ${periodoTxt(opts.relatorio)}`,
     `A receber: ${fmt(linha.aReceber ?? Math.max(0, linha.valorLiquido - (linha.valesPendentes || 0) - (linha.descontosAvulsos || 0) - (linha.pagamentosJaFeitos || 0)))}`,
+    resumoDescontos(linha).texto,
     (linha.valesPendentes || 0) > 0 ? `Vale (adiantamento já recebido): − ${fmt(linha.valesPendentes)}` : '',
     '',
-    'O PDF vai em anexo nesta conversa.',
+    'Anexe o PDF que acabou de ser baixado neste aparelho.',
     '',
     d.nome,
   ].filter(Boolean).join('\n')
+}
+
+export async function enviarFolhaWhatsApp(opts: FolhaIndividualOpts, conversaAberta = false) {
+  const { linha } = opts
+  if (!telefoneWhatsApp(linha.funcionario)) {
+    throw new Error('Cadastre o celular do funcionário para enviar no WhatsApp.')
+  }
+  const file = await gerarPdfFolhaIndividual(opts)
   return enviarArquivoWhatsApp({
     pessoa: linha.funcionario,
     file,
-    texto,
+    texto: mensagemFolhaWhatsApp(opts),
     titulo: `Folha — ${linha.funcionario.nome}`,
+    conversaAberta,
   })
 }
+
+export { abrirWhatsApp, telefoneWhatsApp }

@@ -47,7 +47,7 @@ export function montarDadosRelatorio(cfg: ConfigMap = {}): DadosRelatorio {
   return {
     nome,
     slogan,
-    logo: cfg.empresa_logo || '',
+    logo: limpar(cfg.foto_perfil) || cfg.empresa_logo || '',
     documentos: [
       cnpj && `CNPJ ${cnpj}`,
       ie && `IE ${ie}`,

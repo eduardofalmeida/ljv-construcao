@@ -1,4 +1,5 @@
 import { NavLink, Link } from 'react-router-dom'
+import { useAuth } from '../../contexts/AuthContext'
 import {
   LayoutDashboard, Users, Building2, FileText,
   HardHat, DollarSign, Package, Truck, BarChart3, X,
@@ -29,6 +30,8 @@ const navItemsEmBreve = [
 ]
 
 export default function Sidebar({ aberta, fechar }: SidebarProps) {
+  const { usuario } = useAuth()
+  const foto = usuario?.fotoPerfil
   return (
     <aside
       className={clsx(
@@ -105,7 +108,11 @@ export default function Sidebar({ aberta, fechar }: SidebarProps) {
                 : 'text-white/60 hover:text-white hover:bg-white/5'
             )}
           >
-            <UserCircle size={18} />
+            {foto ? (
+              <img src={foto} alt="" className="w-7 h-7 rounded-full object-cover flex-shrink-0" />
+            ) : (
+              <UserCircle size={18} />
+            )}
             Meu Perfil
           </NavLink>
           <NavLink
