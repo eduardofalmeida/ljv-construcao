@@ -1,25 +1,11 @@
 import axios from 'axios'
 
 /**
- * Em produção (Railway), defina no BUILD:
- * VITE_API_URL=https://seu-backend.up.railway.app/api
- * Sem https:// o navegador trata o host como caminho do próprio frontend.
+ * A API é sempre chamada no mesmo endereço do site (/api).
+ * O servidor do frontend encaminha esse caminho ao backend.
+ * Chamar o backend em outro domínio perde o cookie de sessão e as telas voltam 401.
  */
-function normalizeApiBase(raw: string | undefined): string {
-  const value = raw?.trim().replace(/\/$/, '') ?? ''
-  if (!value) return '/api'
-
-  const withProtocol = /^https?:\/\//i.test(value) ? value : `https://${value}`
-  try {
-    const url = new URL(withProtocol)
-    if (url.pathname === '/' || url.pathname === '') url.pathname = '/api'
-    return url.toString().replace(/\/$/, '')
-  } catch {
-    return '/api'
-  }
-}
-
-const baseURL = normalizeApiBase(import.meta.env.VITE_API_URL as string | undefined)
+const baseURL = '/api'
 
 const api = axios.create({
   baseURL,
@@ -35,8 +21,9 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       const currentPath = window.location.pathname
-      if (!currentPath.startsWith('/login') && !currentPath.startsWith('/')) {
-        window.location.href = '/login'
+      const paginaPublica = currentPath === '/' || currentPath.startsWith('/login')
+      if (!paginaPublica) {
+        window.location.assign('/login')
       }
     }
     return Promise.reject(error)

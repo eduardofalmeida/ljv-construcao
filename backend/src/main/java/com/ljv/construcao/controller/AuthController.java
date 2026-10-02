@@ -3,6 +3,7 @@ package com.ljv.construcao.controller;
 import com.ljv.construcao.model.Usuario;
 import com.ljv.construcao.repository.UsuarioRepository;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -26,7 +27,9 @@ public class AuthController {
     private final UsuarioRepository usuarioRepository;
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody Map<String, String> request, HttpServletRequest httpRequest) {
+    public ResponseEntity<?> login(@RequestBody Map<String, String> request,
+                                   HttpServletRequest httpRequest,
+                                   HttpServletResponse httpResponse) {
         String username = request.get("username");
         String password = request.get("password");
 
@@ -35,11 +38,10 @@ public class AuthController {
                 new UsernamePasswordAuthenticationToken(username, password);
             Authentication authentication = authenticationManager.authenticate(token);
 
-            SecurityContext sc = SecurityContextHolder.getContext();
-            sc.setAuthentication(authentication);
-
-            HttpSession session = httpRequest.getSession(true);
-            session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, sc);
+            SecurityContext context = SecurityContextHolder.createEmptyContext();
+            context.setAuthentication(authentication);
+            SecurityContextHolder.setContext(context);
+            new HttpSessionSecurityContextRepository().saveContext(context, httpRequest, httpResponse);
 
             Usuario usuario = usuarioRepository.findByUsername(username).orElseThrow();
 

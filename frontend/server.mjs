@@ -1,4 +1,5 @@
-import { createServer } from 'node:http'
+import { createServer, request as httpRequest } from 'node:http'
+import { request as httpsRequest } from 'node:https'
 import { readFile } from 'node:fs/promises'
 import { extname, join, normalize, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -24,6 +25,62 @@ const MIME = {
   '.webmanifest': 'application/manifest+json',
 }
 
+function alvoDaApi() {
+  const raw = (process.env.API_PROXY_TARGET || process.env.VITE_API_URL || '').trim()
+  if (!raw) return null
+  const comProtocolo = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`
+  try {
+    return new URL(comProtocolo)
+  } catch {
+    return null
+  }
+}
+
+function caminhoDaApi(url) {
+  const path = (url || '/').split('?')[0]
+  return path === '/api' || path.startsWith('/api/')
+}
+
+function encaminharApi(req, res) {
+  const alvo = alvoDaApi()
+  if (!alvo) {
+    res.writeHead(502, { 'Content-Type': 'application/json; charset=utf-8' })
+    res.end(JSON.stringify({ message: 'Defina VITE_API_URL ou API_PROXY_TARGET no serviço do frontend.' }))
+    return
+  }
+
+  const lib = alvo.protocol === 'https:' ? httpsRequest : httpRequest
+  const headers = { ...req.headers, host: alvo.host }
+  delete headers.connection
+
+  const proxyReq = lib.request({
+    protocol: alvo.protocol,
+    hostname: alvo.hostname,
+    port: alvo.port || undefined,
+    method: req.method,
+    path: req.url,
+    headers,
+  }, (proxyRes) => {
+    const saida = { ...proxyRes.headers }
+    delete saida.connection
+    delete saida['transfer-encoding']
+    res.writeHead(proxyRes.statusCode || 502, saida)
+    proxyRes.pipe(res)
+  })
+
+  proxyReq.on('error', (error) => {
+    console.error('Falha ao encaminhar /api:', error.message)
+    if (!res.headersSent) {
+      res.writeHead(502, { 'Content-Type': 'application/json; charset=utf-8' })
+      res.end(JSON.stringify({ message: 'Não foi possível falar com o backend.' }))
+    } else {
+      res.end()
+    }
+  })
+
+  req.pipe(proxyReq)
+}
+
 function resolveInsideDist(pathname) {
   const relative = pathname === '/' ? 'index.html' : pathname.replace(/^\/+/, '')
   const full = normalize(join(dist, relative))
@@ -33,6 +90,11 @@ function resolveInsideDist(pathname) {
 }
 
 const server = createServer(async (req, res) => {
+  if (caminhoDaApi(req.url)) {
+    encaminharApi(req, res)
+    return
+  }
+
   try {
     const url = new URL(req.url || '/', 'http://localhost')
     const pathname = decodeURIComponent(url.pathname)
