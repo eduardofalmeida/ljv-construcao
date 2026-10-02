@@ -49,11 +49,11 @@ function encaminharApi(req, res) {
     return
   }
 
-  const lib = alvo.protocol === 'https:' ? httpsRequest : httpRequest
+  const pedir = alvo.protocol === 'https:' ? httpsRequest : httpRequest
   const headers = { ...req.headers, host: alvo.host }
   delete headers.connection
 
-  const proxyReq = lib.request({
+  const proxyReq = pedir({
     protocol: alvo.protocol,
     hostname: alvo.hostname,
     port: alvo.port || undefined,
@@ -91,7 +91,15 @@ function resolveInsideDist(pathname) {
 
 const server = createServer(async (req, res) => {
   if (caminhoDaApi(req.url)) {
-    encaminharApi(req, res)
+    try {
+      encaminharApi(req, res)
+    } catch (error) {
+      console.error(error)
+      if (!res.headersSent) {
+        res.writeHead(502, { 'Content-Type': 'application/json; charset=utf-8' })
+        res.end(JSON.stringify({ message: 'Não foi possível falar com o backend.' }))
+      }
+    }
     return
   }
 
