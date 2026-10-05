@@ -2,6 +2,7 @@ package com.ljv.construcao.repository;
 
 import com.ljv.construcao.model.ItemObra;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -21,4 +22,8 @@ public interface ItemObraRepository extends JpaRepository<ItemObra, Long> {
     long countByObraIdAndAtivoTrue(Long obraId);
 
     boolean existsByObraId(Long obraId);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("DELETE FROM ItemObra i WHERE i.obra.id = :obraId")
+    void deleteByObraId(@Param("obraId") Long obraId);
 }

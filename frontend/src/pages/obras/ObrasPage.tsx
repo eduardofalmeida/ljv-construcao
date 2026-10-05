@@ -501,7 +501,7 @@ export default function ObrasPage() {
         <FormObra obra={obraSelecionada} onSalvar={() => { setModalAberto(false); carregar() }} onFechar={() => setModalAberto(false)} />
       </Modal>
 
-      <ConfirmDialog aberto={!!confirmarRemocao} fechar={() => setConfirmarRemocao(null)} titulo="Remover obra" mensagem={`Tem certeza que deseja remover a obra "${confirmarRemocao?.nome}"?`} onConfirmar={remover} carregando={removendo} />
+      <ConfirmDialog aberto={!!confirmarRemocao} fechar={() => setConfirmarRemocao(null)} titulo="Remover obra" mensagem={`Tem certeza que deseja remover a obra "${confirmarRemocao?.nome}"? Itens, recebimentos, aditivos e o diário também serão apagados. O orçamento vinculado permanece, sem essa obra.`} onConfirmar={remover} carregando={removendo} />
     </div>
   )
 }

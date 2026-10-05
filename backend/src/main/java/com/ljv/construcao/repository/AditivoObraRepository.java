@@ -2,6 +2,7 @@ package com.ljv.construcao.repository;
 
 import com.ljv.construcao.model.AditivoObra;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -18,4 +19,8 @@ public interface AditivoObraRepository extends JpaRepository<AditivoObra, Long> 
 
     @Query("SELECT COUNT(a) FROM AditivoObra a WHERE a.obra.id = :obraId")
     long countByObraId(@Param("obraId") Long obraId);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("DELETE FROM AditivoObra a WHERE a.obra.id = :obraId")
+    void deleteByObraId(@Param("obraId") Long obraId);
 }

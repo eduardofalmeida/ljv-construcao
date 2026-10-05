@@ -5,6 +5,7 @@ import com.ljv.construcao.model.enums.StatusOrcamento;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -57,4 +58,8 @@ public interface OrcamentoRepository extends JpaRepository<Orcamento, Long> {
 
     @Query("SELECT DISTINCT o FROM Orcamento o LEFT JOIN FETCH o.itens WHERE o.obra.id = :obraId")
     Optional<Orcamento> findByObraIdComItens(@Param("obraId") Long obraId);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Orcamento o SET o.obra = null WHERE o.obra.id = :obraId")
+    void desvincularObra(@Param("obraId") Long obraId);
 }

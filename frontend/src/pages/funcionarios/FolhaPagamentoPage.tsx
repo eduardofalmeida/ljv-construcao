@@ -14,7 +14,7 @@ import { maskCurrency } from '../../utils/masks'
 import { useConfigSite } from '../../contexts/ConfigSiteContext'
 import { useAuth } from '../../contexts/AuthContext'
 import { montarDadosRelatorio } from '../../utils/dadosRelatorio'
-import { imprimirFolhaIndividual, enviarFolhaWhatsApp, mensagemFolhaWhatsApp, abrirWhatsApp, telefoneWhatsApp, resumoDescontos } from '../../utils/folhaPDF'
+import { imprimirFolhaIndividual, enviarFolhaWhatsApp, telefoneWhatsApp, resumoDescontos } from '../../utils/folhaPDF'
 
 // ─── Constantes e helpers ──────────────────────────────────────
 
@@ -858,12 +858,14 @@ function AbaRelatorio() {
       toast.error('Cadastre o celular do funcionário para enviar no WhatsApp.')
       return
     }
-    const tel = telefoneWhatsApp(linha.funcionario)
-    abrirWhatsApp(tel, mensagemFolhaWhatsApp(optsIndividual(linha)))
     setEnviandoId(linha.funcionario.id)
     try {
-      await enviarFolhaWhatsApp(optsIndividual(linha), true)
-      toast.success('WhatsApp aberto na conversa do funcionário. Anexe o PDF que acabou de ser baixado.')
+      const modo = await enviarFolhaWhatsApp(optsIndividual(linha))
+      toast.success(
+        modo === 'compartilhado'
+          ? 'O WhatsApp abriu com o PDF anexado. Escolha a conversa e confirme o envio.'
+          : 'Este navegador não anexa o arquivo sozinho. O PDF foi baixado e o WhatsApp foi aberto — anexe o arquivo na conversa.'
+      )
     } catch (err) {
       if ((err as Error).name === 'AbortError') return
       toast.error((err as Error).message || 'Não foi possível enviar no WhatsApp')

@@ -5,6 +5,7 @@ import com.ljv.construcao.model.enums.TipoTransacao;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -32,4 +33,8 @@ public interface TransacaoRepository extends JpaRepository<Transacao, Long> {
            "LOWER(t.descricao) LIKE LOWER(CONCAT('%', :q, '%')) OR " +
            "LOWER(t.categoria) LIKE LOWER(CONCAT('%', :q, '%'))")
     Page<Transacao> buscar(@Param("q") String q, Pageable pageable);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Transacao t SET t.obra = null WHERE t.obra.id = :obraId")
+    void desvincularObra(@Param("obraId") Long obraId);
 }

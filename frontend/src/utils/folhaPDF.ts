@@ -358,7 +358,7 @@ export function mensagemFolhaWhatsApp(opts: FolhaIndividualOpts) {
     resumoDescontos(linha).texto,
     (linha.valesPendentes || 0) > 0 ? `Vale (adiantamento já recebido): − ${fmt(linha.valesPendentes)}` : '',
     '',
-    'Anexe o PDF que acabou de ser baixado neste aparelho.',
+    'O PDF segue em anexo.',
     '',
     d.nome,
   ].filter(Boolean).join('\n')

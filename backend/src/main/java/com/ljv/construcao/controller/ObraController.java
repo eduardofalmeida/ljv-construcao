@@ -1,14 +1,22 @@
 package com.ljv.construcao.controller;
 
 import com.ljv.construcao.model.Obra;
+import com.ljv.construcao.model.RecebimentoObra;
 import com.ljv.construcao.model.enums.StatusObra;
+import com.ljv.construcao.repository.AditivoObraRepository;
+import com.ljv.construcao.repository.DiarioObraRepository;
+import com.ljv.construcao.repository.ItemObraRepository;
 import com.ljv.construcao.repository.ObraRepository;
+import com.ljv.construcao.repository.OrcamentoRepository;
+import com.ljv.construcao.repository.RecebimentoObraRepository;
+import com.ljv.construcao.repository.TransacaoRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -17,6 +25,12 @@ import org.springframework.web.bind.annotation.*;
 public class ObraController {
 
     private final ObraRepository obraRepository;
+    private final ItemObraRepository itemObraRepository;
+    private final AditivoObraRepository aditivoObraRepository;
+    private final RecebimentoObraRepository recebimentoObraRepository;
+    private final DiarioObraRepository diarioObraRepository;
+    private final OrcamentoRepository orcamentoRepository;
+    private final TransacaoRepository transacaoRepository;
 
     @GetMapping
     public ResponseEntity<Page<Obra>> listar(
@@ -80,10 +94,27 @@ public class ObraController {
     }
 
     @DeleteMapping("/{id}")
+    @Transactional
     public ResponseEntity<Void> remover(@PathVariable Long id) {
-        if (!obraRepository.existsById(id)) {
+        Obra obra = obraRepository.findById(id).orElse(null);
+        if (obra == null) {
             return ResponseEntity.notFound().build();
         }
+        if (obra.getFuncionarios() != null) {
+            obra.getFuncionarios().clear();
+        }
+        for (RecebimentoObra recebimento : recebimentoObraRepository.findByObraIdOrderByDataDesc(id)) {
+            Long transacaoId = recebimento.getTransacaoId();
+            if (transacaoId != null && transacaoRepository.existsById(transacaoId)) {
+                transacaoRepository.deleteById(transacaoId);
+            }
+        }
+        recebimentoObraRepository.deleteByObraId(id);
+        itemObraRepository.deleteByObraId(id);
+        aditivoObraRepository.deleteByObraId(id);
+        diarioObraRepository.deleteByObraId(id);
+        orcamentoRepository.desvincularObra(id);
+        transacaoRepository.desvincularObra(id);
         obraRepository.deleteById(id);
         return ResponseEntity.noContent().build();
     }

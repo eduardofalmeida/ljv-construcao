@@ -6,7 +6,7 @@ import {
 } from 'lucide-react'
 import api from '../../services/api'
 import { imprimirOrcamento } from '../../utils/orcamentoPDF'
-import { abrirWhatsApp, enviarOrcamentoWhatsApp, mensagemEnvioOrcamento, telefoneWhatsApp } from '../../utils/whatsappOrcamento'
+import { enviarOrcamentoWhatsApp, telefoneWhatsApp } from '../../utils/whatsappOrcamento'
 import { statusOrcamento, STATUS_RESPOSTA } from '../../utils/orcamentoStatus'
 import type { Orcamento, OrcamentoResumo, Page, StatusOrcamento } from '../../types'
 import Modal from '../../components/ui/Modal'
@@ -130,15 +130,17 @@ export default function OrcamentosPage() {
       abrirEdicao(orc)
       return
     }
-    const tel = telefoneWhatsApp(orc.cliente)
-    abrirWhatsApp(tel, mensagemEnvioOrcamento(orc, empresaRelatorio))
     setEnviandoId(orc.id)
     try {
       const { data } = await api.get<Orcamento>(`/orcamentos/${orc.id}`)
-      await enviarOrcamentoWhatsApp(data, empresaRelatorio, true)
+      const modo = await enviarOrcamentoWhatsApp(data, empresaRelatorio)
       await marcarEnviado(orc.id)
       recarregarTudo()
-      toast.success('WhatsApp aberto na conversa do cliente. Anexe o PDF que acabou de ser baixado.')
+      toast.success(
+        modo === 'compartilhado'
+          ? 'O WhatsApp abriu com o PDF anexado. Escolha a conversa e confirme o envio.'
+          : 'Este navegador não anexa o arquivo sozinho. O PDF foi baixado e o WhatsApp foi aberto — anexe o arquivo na conversa.'
+      )
     } catch (err) {
       if ((err as Error).name === 'AbortError') return
       toast.error((err as Error).message || 'Não foi possível enviar no WhatsApp')
