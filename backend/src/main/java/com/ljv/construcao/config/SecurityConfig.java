@@ -1,6 +1,7 @@
 package com.ljv.construcao.config;
 
 import com.ljv.construcao.service.CustomUserDetailsService;
+import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -31,6 +32,8 @@ public class SecurityConfig {
             .csrf(AbstractHttpConfigurer::disable)
             .cors(Customizer.withDefaults())
             .authorizeHttpRequests(auth -> auth
+                .dispatcherTypeMatchers(DispatcherType.ERROR, DispatcherType.FORWARD).permitAll()
+                .requestMatchers("/error").permitAll()
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
                 .requestMatchers(HttpMethod.POST, "/auth/logout").permitAll()

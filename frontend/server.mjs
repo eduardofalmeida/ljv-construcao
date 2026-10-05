@@ -52,6 +52,12 @@ function encaminharApi(req, res) {
   const pedir = alvo.protocol === 'https:' ? httpsRequest : httpRequest
   const headers = { ...req.headers, host: alvo.host }
   delete headers.connection
+  // O navegador fala com este servidor no mesmo endereço. Se o Origin seguir
+  // até o backend, o Spring responde 403 Invalid CORS request.
+  delete headers.origin
+  delete headers['access-control-request-method']
+  delete headers['access-control-request-headers']
+  delete headers['access-control-request-private-network']
 
   const proxyReq = pedir({
     protocol: alvo.protocol,

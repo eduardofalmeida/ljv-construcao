@@ -25,6 +25,13 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:8080',
         changeOrigin: true,
+        configure: (proxy) => {
+          proxy.on('proxyReq', (proxyReq) => {
+            proxyReq.removeHeader('origin')
+            proxyReq.removeHeader('access-control-request-method')
+            proxyReq.removeHeader('access-control-request-headers')
+          })
+        },
       }
     }
   },
