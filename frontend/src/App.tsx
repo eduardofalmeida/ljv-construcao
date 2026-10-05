@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { ConfigSiteProvider } from './contexts/ConfigSiteContext'
@@ -16,6 +17,8 @@ import ConfiguracoesSitePage from './pages/configuracoes/ConfiguracoesSitePage'
 import ConfiguracoesEmpresaPage from './pages/configuracoes/ConfiguracoesEmpresaPage'
 import DepoimentosAdminPage from './pages/configuracoes/DepoimentosAdminPage'
 import FolhaPagamentoPage from './pages/funcionarios/FolhaPagamentoPage'
+
+const FutPage = lazy(() => import('./pages/fut/FutPage'))
 
 function RotaProtegida({ children }: { children: React.ReactNode }) {
   const { autenticado, carregando } = useAuth()
@@ -91,6 +94,15 @@ function AppRoutes() {
       >
         <Route index element={<PerfilPage />} />
       </Route>
+
+      <Route
+        path="/fut-vkk"
+        element={
+          <Suspense fallback={<div style={{ minHeight: '100vh', background: '#07110d' }} />}>
+            <FutPage />
+          </Suspense>
+        }
+      />
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />

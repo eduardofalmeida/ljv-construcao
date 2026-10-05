@@ -1,0 +1,585 @@
+body.fut-body {
+  background: #07110d;
+  color: #f6f1e6;
+}
+
+.fut-raiz {
+  --noite: #07110d;
+  --texto: #f6f1e6;
+  --mudo: #b7c2b8;
+  --ouro: #e8c97a;
+  --ouro-forte: #f3d48a;
+  --linha: rgba(246, 241, 230, 0.12);
+  min-height: 100dvh;
+  color: var(--texto);
+  background:
+    radial-gradient(900px 420px at 50% -8%, rgba(232, 201, 122, 0.16), transparent 58%),
+    radial-gradient(700px 480px at 110% 80%, rgba(31, 92, 58, 0.28), transparent 55%),
+    radial-gradient(640px 420px at -10% 90%, rgba(22, 70, 46, 0.22), transparent 50%),
+    var(--noite);
+  font-family: Outfit, Manrope, Inter, sans-serif;
+  color-scheme: dark;
+}
+
+.fut-raiz * { box-sizing: border-box; }
+.fut-raiz h1,
+.fut-raiz h2,
+.fut-raiz h3,
+.fut-raiz p { margin: 0; }
+.fut-raiz button,
+.fut-raiz input,
+.fut-raiz textarea { font: inherit; color: inherit; }
+.fut-raiz button { cursor: pointer; }
+.fut-raiz ul,
+.fut-raiz ol { margin: 0; padding: 0; list-style: none; }
+.fut-raiz :focus-visible {
+  outline: 2px solid var(--ouro);
+  outline-offset: 3px;
+}
+
+.fut-fundo {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  color: rgba(255, 255, 255, 0.22);
+  opacity: 0.42;
+  mask-image: linear-gradient(to bottom, transparent 0%, #000 28%, #000 78%, transparent 100%);
+}
+.fut-luz {
+  position: absolute;
+  width: 46vw;
+  height: 46vw;
+  left: 27vw;
+  top: -12vw;
+  background: radial-gradient(circle, rgba(255, 248, 230, 0.09), transparent 68%);
+}
+.fut-campo {
+  position: absolute;
+  width: min(920px, 120vw);
+  left: 50%;
+  top: 72%;
+  transform: translate(-50%, -50%);
+}
+
+.fut-miolo {
+  position: relative;
+  z-index: 1;
+  width: min(1080px, calc(100% - 28px));
+  margin: 0 auto;
+  padding: 28px 0 48px;
+}
+
+.fut-topo {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: 8px;
+  margin-bottom: 22px;
+}
+.fut-escudo { width: 54px; height: auto; }
+.fut-titulo {
+  font-family: Oswald, 'Arial Narrow', sans-serif;
+  font-size: clamp(2.1rem, 7vw, 3.5rem);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  line-height: 0.95;
+  text-transform: uppercase;
+}
+.fut-subtitulo {
+  max-width: 34rem;
+  color: var(--mudo);
+  font-size: 1.02rem;
+  line-height: 1.45;
+}
+
+.fut-passos { margin-bottom: 18px; }
+.fut-passos ol {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+.fut-passos ol::-webkit-scrollbar { display: none; }
+.fut-passos li { display: flex; align-items: center; gap: 4px; flex: 0 0 auto; }
+.fut-passo-seta { color: rgba(232, 201, 122, 0.55); font-size: 0.85rem; }
+.fut-passo {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: rgba(246, 241, 230, 0.45);
+  font-size: 0.82rem;
+  letter-spacing: 0.01em;
+}
+.fut-passo:disabled { cursor: default; }
+.fut-passo-feito { color: #d7e7da; }
+.fut-passo-atual {
+  color: #1a1408;
+  background: linear-gradient(180deg, #f3d48a, #d7a441);
+  border-color: transparent;
+}
+
+.fut-painel,
+.fut-atleta,
+.fut-placar,
+.fut-equilibrio,
+.fut-reservas,
+.fut-time {
+  border: 1px solid var(--linha);
+  border-radius: 22px;
+  background: rgba(14, 22, 18, 0.94);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
+}
+.fut-painel { padding: 18px; display: grid; gap: 14px; }
+.fut-painel h2,
+.fut-titulo-bloco h2,
+.fut-equilibrio h3,
+.fut-reservas h3 {
+  font-family: Oswald, 'Arial Narrow', sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-size: 1.35rem;
+}
+.fut-titulo-bloco { margin-bottom: 14px; }
+.fut-titulo-bloco h2 { font-size: clamp(1.8rem, 4vw, 2.4rem); }
+
+.fut-guia {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.fut-guia li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.22);
+  color: var(--mudo);
+  font-size: 0.92rem;
+}
+.fut-guia b {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(232, 201, 122, 0.16);
+  color: var(--ouro);
+  font-size: 0.75rem;
+}
+
+.fut-label {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+.fut-ajuda { color: var(--mudo); font-size: 0.9rem; line-height: 1.4; }
+.fut-ajuda-erro { color: #ffc7bf; font-size: 0.9rem; }
+.fut-kicker {
+  color: var(--ouro);
+  font-size: 0.75rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.fut-vazio { color: var(--mudo); padding: 8px 0 4px; }
+
+.fut-caixa { position: relative; }
+.fut-caixa textarea,
+.fut-add-um input,
+.fut-input-nome,
+.fut-linha input,
+.fut-stepper input {
+  width: 100%;
+  border: 1px solid rgba(246, 241, 230, 0.16);
+  background: rgba(0, 0, 0, 0.28);
+  border-radius: 16px;
+  color: var(--texto);
+}
+.fut-caixa textarea {
+  position: relative;
+  z-index: 1;
+  min-height: 220px;
+  padding: 16px;
+  resize: vertical;
+  background: #0c1411;
+  line-height: 1.55;
+  font-size: 16px;
+}
+.fut-exemplo {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  margin: 0;
+  padding: 16px;
+  color: rgba(183, 194, 184, 0.62);
+  font: inherit;
+  font-size: 16px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  pointer-events: none;
+}
+.fut-raiz textarea:focus,
+.fut-raiz input:focus {
+  outline: none;
+  border-color: rgba(232, 201, 122, 0.75);
+  box-shadow: 0 0 0 3px rgba(232, 201, 122, 0.16);
+}
+
+.fut-recado,
+.fut-alerta {
+  border-radius: 14px;
+  padding: 12px 14px;
+  line-height: 1.4;
+}
+.fut-alerta {
+  display: grid;
+  gap: 4px;
+  background: rgba(240, 197, 110, 0.1);
+  border: 1px solid rgba(240, 197, 110, 0.38);
+  color: #f8e7c0;
+}
+.fut-recado-ok {
+  background: rgba(46, 140, 84, 0.16);
+  border: 1px solid rgba(130, 196, 154, 0.35);
+  color: #e7f6ec;
+}
+
+.fut-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 52px;
+  padding: 0 16px;
+  border-radius: 14px;
+  border: 1px solid transparent;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  touch-action: manipulation;
+}
+.fut-btn:active { transform: scale(0.985); }
+.fut-btn-ouro {
+  font-family: Oswald, 'Arial Narrow', sans-serif;
+  font-size: 1.12rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #1a1408;
+  background: linear-gradient(180deg, #f6dc9e, #d7a441);
+  box-shadow: 0 10px 24px rgba(215, 164, 65, 0.22);
+}
+.fut-btn-ouro:hover { filter: brightness(1.04); }
+.fut-btn-linha {
+  background: transparent;
+  border-color: rgba(232, 201, 122, 0.4);
+  color: var(--texto);
+}
+.fut-btn-linha:hover { background: rgba(232, 201, 122, 0.08); }
+.fut-btn-fantasma {
+  background: transparent;
+  color: var(--mudo);
+  min-height: 46px;
+}
+.fut-btn-perigo { color: #ffb4ac; }
+.fut-acoes { display: grid; gap: 10px; }
+.fut-acoes-dupla { grid-template-columns: 1fr; }
+.fut-rodape {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom));
+}
+
+.fut-bloco { display: grid; gap: 10px; }
+.fut-lista,
+.fut-elenco { display: grid; gap: 10px; }
+.fut-linha,
+.fut-atleta header,
+.fut-fila,
+.fut-reservas li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.fut-linha {
+  min-height: 58px;
+  padding: 8px 10px;
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+.fut-numero {
+  width: 28px;
+  flex: 0 0 auto;
+  color: var(--ouro);
+  font-family: Oswald, 'Arial Narrow', sans-serif;
+  letter-spacing: 0.04em;
+}
+.fut-nome { min-width: 0; flex: 1; overflow-wrap: anywhere; }
+.fut-input-nome,
+.fut-add-um input,
+.fut-linha input {
+  min-height: 44px;
+  padding: 0 12px;
+  font-size: 16px;
+}
+.fut-linha input { flex: 1; min-width: 0; width: auto; }
+.fut-add-um { display: grid; gap: 8px; }
+.fut-acoes-icones { display: flex; flex: 0 0 auto; }
+.fut-icone {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--mudo);
+}
+.fut-icone svg { width: 18px; height: 18px; }
+.fut-icone:hover { color: var(--texto); background: rgba(255, 255, 255, 0.05); }
+.fut-icone-perigo:hover { color: #ffb4ac; background: rgba(255, 90, 70, 0.08); }
+
+.fut-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  margin-bottom: 8px;
+  color: var(--mudo);
+}
+.fut-stats strong { color: var(--texto); font-size: 1.15rem; }
+.fut-elenco { margin-top: 14px; }
+.fut-atleta {
+  display: grid;
+  gap: 4px;
+  padding: 14px 14px 12px;
+}
+.fut-atleta h3 { font-size: 1.12rem; font-weight: 650; }
+.fut-nivel { color: var(--ouro-forte); font-size: 0.92rem; }
+
+.fut-estrelas { display: flex; gap: 2px; }
+.fut-estrela {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: rgba(246, 241, 230, 0.28);
+}
+.fut-estrela svg { width: 26px; height: 26px; }
+.fut-estrela-ativa { color: var(--ouro); }
+.fut-estrelas-leitura { gap: 1px; }
+.fut-estrelas-leitura svg { width: 16px; height: 16px; color: var(--ouro); }
+.fut-pop { animation: fut-pop 0.28s ease; }
+
+.fut-config-grade { display: grid; gap: 14px; }
+.fut-stepper { display: flex; align-items: center; gap: 10px; }
+.fut-stepper button {
+  width: 48px;
+  height: 48px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  border: 1px solid rgba(232, 201, 122, 0.45);
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--ouro);
+  font-size: 1.6rem;
+  line-height: 1;
+}
+.fut-stepper input {
+  width: 96px;
+  flex: 0 0 auto;
+  height: 64px;
+  text-align: center;
+  font-family: Oswald, 'Arial Narrow', sans-serif;
+  font-size: 2rem;
+  padding: 0;
+}
+.fut-divisor { height: 1px; background: var(--linha); }
+.fut-lista-goleiros { margin-top: 4px; }
+
+.fut-placar {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  padding: 18px;
+  background:
+    linear-gradient(180deg, rgba(232, 201, 122, 0.08), transparent 28%),
+    rgba(10, 16, 13, 0.88);
+}
+.fut-placar ul { display: grid; gap: 6px; color: var(--mudo); }
+.fut-placar-destaque {
+  font-family: Oswald, 'Arial Narrow', sans-serif;
+  font-size: 1.55rem;
+  letter-spacing: 0.03em;
+  line-height: 1.15;
+  text-transform: uppercase;
+}
+.fut-placar-fora { color: var(--ouro-forte); font-weight: 650; }
+
+.fut-sorteio { justify-items: center; text-align: center; min-height: 320px; }
+.fut-sorteio ul {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.fut-nome-giro {
+  min-height: 46px;
+  display: grid;
+  place-items: center;
+  padding: 8px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.28);
+  animation: fut-giro 0.18s ease;
+}
+.fut-bola {
+  width: 72px;
+  height: 72px;
+  color: var(--ouro);
+  animation: fut-girar 1.1s linear infinite;
+}
+.fut-bola svg { width: 100%; height: 100%; }
+
+.fut-equilibrio,
+.fut-reservas { padding: 16px; margin-bottom: 14px; display: grid; gap: 10px; }
+.fut-equilibrio ul { display: grid; gap: 8px; }
+.fut-equilibrio-linha { display: grid; gap: 6px; }
+.fut-equilibrio-nome { display: flex; align-items: center; gap: 8px; font-weight: 650; }
+.fut-equilibrio-nome i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.fut-trilho {
+  display: block;
+  height: 8px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+.fut-trilho-valor {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  transform-origin: left center;
+  animation: fut-barra 0.55s ease both;
+}
+.fut-diferenca { font-weight: 650; }
+.fut-proximo { color: #d5efd8; }
+
+.fut-times { display: grid; gap: 14px; }
+.fut-time { position: relative; overflow: hidden; padding: 0; }
+.fut-time-faixa { position: absolute; left: 0; top: 0; bottom: 0; width: 6px; }
+.fut-time-topo { padding: 16px 16px 12px 20px; }
+.fut-time h3 {
+  font-family: Oswald, 'Arial Narrow', sans-serif;
+  letter-spacing: 0.06em;
+  font-size: 1.45rem;
+  font-weight: 600;
+}
+.fut-meta { color: var(--mudo); font-size: 0.88rem; margin-top: 2px; }
+.fut-camisa { width: 52px; height: 52px; flex: 0 0 auto; }
+.fut-fila {
+  justify-content: space-between;
+  padding: 8px 16px 8px 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+.fut-fila-gk small,
+.fut-reservas small { color: var(--mudo); }
+.fut-forca {
+  margin: 8px 12px 12px 18px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid;
+  font-family: Oswald, 'Arial Narrow', sans-serif;
+  letter-spacing: 0.05em;
+  font-size: 1.15rem;
+  text-transform: uppercase;
+}
+.fut-reservas li {
+  justify-content: space-between;
+  min-height: 44px;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.fut-modal-fundo {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.62);
+}
+.fut-modal {
+  width: min(420px, 100%);
+  display: grid;
+  gap: 12px;
+  padding: 20px;
+  border-radius: 20px;
+  border: 1px solid rgba(232, 201, 122, 0.35);
+  background: #121a16;
+}
+.fut-modal h2 {
+  font-family: Oswald, 'Arial Narrow', sans-serif;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.fut-modal p { color: var(--mudo); }
+
+.fut-surgir { animation: fut-surgir 0.42s ease both; }
+
+@keyframes fut-surgir {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes fut-pop {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.22); }
+  100% { transform: scale(1); }
+}
+@keyframes fut-giro {
+  from { opacity: 0.25; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes fut-girar {
+  to { transform: rotate(360deg); }
+}
+@keyframes fut-barra {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+@media (min-width: 720px) {
+  .fut-miolo { padding-top: 40px; }
+  .fut-guia { grid-template-columns: repeat(4, 1fr); }
+  .fut-acoes-dupla { grid-template-columns: 1fr 1.4fr; }
+  .fut-add-um { grid-template-columns: 1fr auto; }
+  .fut-add-um .fut-btn { width: auto; min-width: 220px; }
+  .fut-elenco { grid-template-columns: 1fr 1fr; }
+  .fut-config-grade { grid-template-columns: 1.15fr 0.85fr; align-items: start; }
+  .fut-times { grid-template-columns: 1fr 1fr; }
+  .fut-sorteio ul { grid-template-columns: repeat(4, 1fr); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fut-raiz *,
+  .fut-raiz *::before,
+  .fut-raiz *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

@@ -21,7 +21,7 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       const currentPath = window.location.pathname
-      const paginaPublica = currentPath === '/' || currentPath.startsWith('/login')
+      const paginaPublica = currentPath === '/' || currentPath.startsWith('/login') || currentPath.startsWith('/fut-vkk')
       if (!paginaPublica) {
         window.location.assign('/login')
       }
