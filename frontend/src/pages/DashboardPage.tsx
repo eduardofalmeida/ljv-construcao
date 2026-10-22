@@ -270,14 +270,9 @@ export default function DashboardPage() {
               <span className="text-xs font-semibold text-primary-500">Total líquido</span>
             </div>
             <div className="text-lg sm:text-xl font-black text-emerald-600 mt-auto break-words">
-              {formatarMoeda(
-                Math.max(0,
-                  (resumo?.folhaPendente?.totalPagamentosPendentes ?? 0) -
-                  (resumo?.folhaPendente?.totalValesPendentes ?? 0)
-                )
-              )}
+              {formatarMoeda(resumo?.folhaPendente?.totalLiquido ?? 0)}
             </div>
-            <div className="text-xs text-primary-400 mt-0.5">Bruto − vales (adiant.)</div>
+            <div className="text-xs text-primary-400 mt-0.5">Bruto − vales − descontos</div>
           </div>
         </div>
 
@@ -339,12 +334,7 @@ export default function DashboardPage() {
             <div className="px-5 py-3 bg-stone-50 border-t border-stone-100 flex items-center justify-between">
               <span className="text-xs text-primary-400">Total a pagar (líquido)</span>
               <span className="text-sm font-black text-emerald-600">
-                {formatarMoeda(
-                  Math.max(0,
-                    (resumo?.folhaPendente?.totalPagamentosPendentes ?? 0) -
-                    (resumo?.folhaPendente?.totalValesPendentes ?? 0)
-                  )
-                )}
+                {formatarMoeda(resumo?.folhaPendente?.totalLiquido ?? 0)}
               </span>
             </div>
           </div>

@@ -9,6 +9,7 @@ import com.ljv.construcao.repository.FuncionarioRepository;
 import com.ljv.construcao.repository.MovimentacaoFuncionarioRepository;
 import com.ljv.construcao.repository.RegistroPontoRepository;
 import com.ljv.construcao.service.FolhaCalculoService;
+import com.ljv.construcao.service.FolhaSaldoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -30,6 +31,7 @@ public class RegistroPontoController {
     private final FuncionarioRepository funcRepo;
     private final MovimentacaoFuncionarioRepository movRepo;
     private final FolhaCalculoService folhaCalculo;
+    private final FolhaSaldoService folhaSaldo;
 
     // ─── CRUD de registros por funcionário ──────────────────
 
@@ -308,81 +310,7 @@ public class RegistroPontoController {
      */
     @GetMapping("/folha/saldos-atuais")
     public ResponseEntity<?> saldosAtuais() {
-        LocalDate hoje = LocalDate.now();
-        LocalDate inicioMes = hoje.withDayOfMonth(1);
-        List<Funcionario> funcionarios = funcRepo.findByAtivoTrue();
-
-        List<Map<String, Object>> lista = new ArrayList<>();
-        BigDecimal totalAPagar = BigDecimal.ZERO;
-        BigDecimal totalVales = BigDecimal.ZERO;
-
-        for (Funcionario func : funcionarios) {
-            LocalDate inicio = inicioMes;
-            String dataUltimoPgto = null;
-            BigDecimal valorUltimo = BigDecimal.ZERO;
-
-            List<com.ljv.construcao.model.MovimentacaoFuncionario> ultimos =
-                movRepo.findUltimosPagamentos(func.getId(), PageRequest.of(0, 1));
-            if (!ultimos.isEmpty()) {
-                var ult = ultimos.get(0);
-                LocalDate dataPgto = ult.getDataPagamento() != null ? ult.getDataPagamento() : ult.getData();
-                inicio = dataPgto.plusDays(1);
-                dataUltimoPgto = dataPgto.toString();
-                valorUltimo = ult.getValor() != null ? ult.getValor() : BigDecimal.ZERO;
-            }
-
-            List<RegistroPonto> regs =
-                pontoRepo.findByFuncionarioIdAndDataBetweenOrderByData(func.getId(), inicio, hoje);
-            FolhaCalculoService.Resultado calc = folhaCalculo.calcular(func, inicio, hoje, regs);
-            inicio = calc.inicio();
-            LocalDate fim = calc.fim();
-
-            // Vales = adiantamento do pagamento; todos em aberto até hoje reduzem o saldo
-            BigDecimal valesPendentes = movRepo.somarValesPendentesAte(func.getId(), TipoMovimentacao.VALE, fim);
-            BigDecimal valesNoCiclo = movRepo.somarPorTipo(func.getId(), TipoMovimentacao.VALE, inicio, fim);
-            BigDecimal descontos = movRepo.somarPorTipo(func.getId(), TipoMovimentacao.DESCONTO, inicio, fim);
-            BigDecimal pagamentos = movRepo.somarPorTipo(func.getId(), TipoMovimentacao.PAGAMENTO, inicio, fim);
-            if (valesPendentes == null) valesPendentes = BigDecimal.ZERO;
-            if (valesNoCiclo == null) valesNoCiclo = BigDecimal.ZERO;
-            if (descontos == null) descontos = BigDecimal.ZERO;
-            if (pagamentos == null) pagamentos = BigDecimal.ZERO;
-
-            BigDecimal saldo = calc.valorLiquido()
-                .subtract(valesPendentes)
-                .subtract(descontos)
-                .subtract(pagamentos)
-                .max(BigDecimal.ZERO);
-
-            totalAPagar = totalAPagar.add(saldo);
-            totalVales = totalVales.add(valesPendentes);
-
-            Map<String, Object> item = new LinkedHashMap<>();
-            item.put("funcionarioId", func.getId());
-            item.put("nome", func.getNome());
-            item.put("foto", func.getFoto() != null ? func.getFoto() : "");
-            item.put("freelancer", Boolean.TRUE.equals(func.getFreelancer()));
-            item.put("tipoRecebimento", func.getTipoRecebimento() != null ? func.getTipoRecebimento().name() : "DIARIA");
-            item.put("inicioCiclo", inicio.toString());
-            item.put("fimCiclo", fim.toString());
-            item.put("dataUltimoPagamento", dataUltimoPgto);
-            item.put("valorUltimoPagamento", valorUltimo);
-            item.put("diasTrabalhados", calc.diasTrabalhados());
-            item.put("valorDia", calc.valorDia());
-            item.put("valorBruto", calc.valorBruto());
-            item.put("valesPendentes", valesPendentes);
-            item.put("valesNoCiclo", valesNoCiclo);
-            item.put("descontos", descontos);
-            item.put("pagamentosJaFeitos", pagamentos);
-            item.put("saldoFinal", saldo);
-            lista.add(item);
-        }
-
-        return ResponseEntity.ok(Map.of(
-            "hoje", hoje.toString(),
-            "totalAPagar", totalAPagar,
-            "totalValesPendentes", totalVales,
-            "funcionarios", lista
-        ));
+        return ResponseEntity.ok(folhaSaldo.calcularSaldosAtuais());
     }
 
     // ─── Helper ─────────────────────────────────────────────

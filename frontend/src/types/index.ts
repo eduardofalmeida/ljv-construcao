@@ -399,6 +399,7 @@ export interface FuncionarioPendente {
 export interface FolhaDashboard {
   totalPagamentosPendentes: number
   totalValesPendentes: number
+  totalLiquido: number
   quantidadeFuncionariosPendentes: number
   funcionariosPendentes: FuncionarioPendente[]
 }
