@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
-import { Eye, EyeOff, Lock, User, ArrowLeft, HardHat } from 'lucide-react'
+import { Eye, EyeOff, Lock, User, HardHat } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import LogoEmpresa from '../components/ui/LogoEmpresa'
 import { useConfigSite } from '../contexts/ConfigSiteContext'
@@ -48,9 +47,9 @@ export default function LoginPage() {
 
         {/* Logo */}
         <div className="relative z-10">
-          <Link to="/" className="flex items-center gap-3 group">
+          <div className="flex items-center gap-3">
             <LogoEmpresa variant="light" size="lg" />
-          </Link>
+          </div>
         </div>
 
         {/* Mensagem central */}
@@ -91,12 +90,6 @@ export default function LoginPage() {
 
       {/* Painel direito — Formulário */}
       <div className="w-full lg:w-1/2 flex flex-col items-center justify-center px-6 py-12 bg-stone-50">
-
-        {/* Voltar (mobile) */}
-        <Link to="/" className="lg:hidden self-start mb-8 flex items-center gap-2 text-primary-500 hover:text-primary-700 text-sm font-medium">
-          <ArrowLeft size={16} />
-          Voltar para o site
-        </Link>
 
         <div className="w-full max-w-md">
           {/* Logo mobile */}
@@ -171,13 +164,6 @@ export default function LoginPage() {
               )}
             </button>
           </form>
-
-          <div className="mt-8 text-center">
-            <Link to="/" className="text-sm text-primary-400 hover:text-primary-600 flex items-center justify-center gap-1.5">
-              <ArrowLeft size={14} />
-              Voltar para o site da LJV Construção
-            </Link>
-          </div>
         </div>
       </div>
     </div>

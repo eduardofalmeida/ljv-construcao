@@ -136,7 +136,7 @@ export default function ConfiguracoesSitePage() {
 
       <div className="flex items-start gap-3 bg-stone-50 border border-stone-100 rounded-xl px-4 py-3 text-sm text-primary-600">
         <RefreshCw size={15} className="mt-0.5 flex-shrink-0" />
-        <span>As alterações da landing page aparecem imediatamente após salvar.</span>
+        <span>As alterações ficam salvas e passam a valer imediatamente.</span>
       </div>
 
       {SECOES.map(secao => (
