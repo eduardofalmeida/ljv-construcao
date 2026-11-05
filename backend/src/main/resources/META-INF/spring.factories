@@ -1,0 +1,3 @@
+org.springframework.boot.env.EnvironmentPostProcessor=\
+com.ljv.construcao.config.RailwaySessionEnvironmentPostProcessor,\
+com.ljv.construcao.config.NeonDatabaseUrlEnvironmentPostProcessor

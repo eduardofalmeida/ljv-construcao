@@ -5,6 +5,14 @@ import LogoEmpresa from '../components/ui/LogoEmpresa'
 import { useConfigSite } from '../contexts/ConfigSiteContext'
 import toast from 'react-hot-toast'
 
+function mensagemDeLogin(erro: unknown) {
+  const resposta = (erro as { response?: { status?: number; data?: { message?: string } } })?.response
+  if (resposta?.status === 401) {
+    return resposta.data?.message || 'Usuário ou senha incorretos. Tente novamente.'
+  }
+  return resposta?.data?.message || 'Não foi possível entrar agora. Tente novamente em instantes.'
+}
+
 export default function LoginPage() {
   const { login } = useAuth()
   const { config } = useConfigSite()
@@ -20,10 +28,10 @@ export default function LoginPage() {
     }
     setCarregando(true)
     try {
-      await login(form.username.toLowerCase(), form.password.toLowerCase())
+      await login(form.username.trim().toLowerCase(), form.password)
       toast.success(`Bem-vindo ao sistema ${config.empresa_nome || 'LJV Construção'}!`)
-    } catch {
-      toast.error('Usuário ou senha incorretos. Tente novamente.')
+    } catch (erro) {
+      toast.error(mensagemDeLogin(erro))
     } finally {
       setCarregando(false)
     }
@@ -133,7 +141,7 @@ export default function LoginPage() {
                   className="input pl-10 pr-10"
                   placeholder="Digite sua senha"
                   value={form.password}
-                  onChange={(e) => setForm(f => ({ ...f, password: e.target.value.toLowerCase() }))}
+                  onChange={(e) => setForm(f => ({ ...f, password: e.target.value }))}
                   autoComplete="current-password"
                   autoCapitalize="none"
                   autoCorrect="off"

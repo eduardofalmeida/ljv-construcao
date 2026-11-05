@@ -2,8 +2,13 @@ package com.ljv.construcao.config;
 
 import org.junit.jupiter.api.Test;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class NeonDatabaseUrlTest {
 
@@ -20,6 +25,29 @@ class NeonDatabaseUrlTest {
                 config.jdbcUrl()
         );
         assertFalse(config.jdbcUrl().contains("channel_binding"));
+    }
+
+    @Test
+    void processadorDoNeonEstaNoSpringFactories() throws Exception {
+        var recurso = NeonDatabaseUrlEnvironmentPostProcessor.class.getClassLoader()
+                .getResource("META-INF/spring.factories");
+        assertNotNull(recurso);
+        String texto = Files.readString(Path.of(recurso.toURI()));
+        assertTrue(texto.contains(NeonDatabaseUrlEnvironmentPostProcessor.class.getName()));
+        assertTrue(texto.contains("org.springframework.boot.env.EnvironmentPostProcessor"));
+    }
+
+    @Test
+    void databaseUrlDoNeonNaoPerdeParaOPadraoLocal() {
+        assertTrue(NeonDatabaseUrlEnvironmentPostProcessor.deveUsarDatabaseUrl(
+                null,
+                "postgresql://neondb_owner:senha@ep-exemplo.aws.neon.tech/neondb"
+        ));
+        assertFalse(NeonDatabaseUrlEnvironmentPostProcessor.deveUsarDatabaseUrl(
+                "jdbc:postgresql://postgres.internal:5432/ljv",
+                "postgresql://neondb_owner:senha@ep-exemplo.aws.neon.tech/neondb"
+        ));
+        assertFalse(NeonDatabaseUrlEnvironmentPostProcessor.deveUsarDatabaseUrl(null, "  "));
     }
 
     @Test
