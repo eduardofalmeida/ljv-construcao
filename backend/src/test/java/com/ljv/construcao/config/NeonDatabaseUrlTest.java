@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -25,6 +26,27 @@ class NeonDatabaseUrlTest {
                 config.jdbcUrl()
         );
         assertFalse(config.jdbcUrl().contains("channel_binding"));
+    }
+
+    @Test
+    void aceitaConnectionStringComAspasOuPrefixoJdbc() {
+        assertEquals(
+                "postgresql://usuario:senha@ep-exemplo.neon.tech/neondb?sslmode=require",
+                NeonDatabaseUrl.normalizar("\"postgresql://usuario:senha@ep-exemplo.neon.tech/neondb?sslmode=require\"")
+        );
+        assertEquals(
+                "postgresql://usuario:senha@ep-exemplo.neon.tech/neondb",
+                NeonDatabaseUrl.normalizar("jdbc:postgresql://usuario:senha@ep-exemplo.neon.tech/neondb")
+        );
+    }
+
+    @Test
+    void encontraConnectionStringEmQualquerVariavel() {
+        String url = NeonDatabaseUrl.encontrar(Map.of(
+                "OUTRA_VARIAVEL", "postgresql://usuario:senha@ep-exemplo.neon.tech/neondb?sslmode=require"
+        ));
+
+        assertEquals("postgresql://usuario:senha@ep-exemplo.neon.tech/neondb?sslmode=require", url);
     }
 
     @Test

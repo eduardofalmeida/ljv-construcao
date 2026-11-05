@@ -6,6 +6,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -18,6 +19,70 @@ public final class NeonDatabaseUrl {
     }
 
     private NeonDatabaseUrl() {
+    }
+
+    /**
+     * Roda antes do Spring. Propriedade de sistema ganha do {@code localhost} gravado em application.properties.
+     * No Render a connection string pode chegar em {@code DATABASE_URL} ou em outro nome.
+     */
+    public static void aplicarNoProcesso() {
+        if (texto(System.getenv("SPRING_DATASOURCE_URL"))) {
+            return;
+        }
+        String databaseUrl = encontrar(System.getenv());
+        if (databaseUrl == null) {
+            return;
+        }
+        toJdbc(databaseUrl).ifPresent(config -> {
+            System.setProperty("spring.datasource.url", config.jdbcUrl());
+            System.setProperty("SPRING_DATASOURCE_URL", config.jdbcUrl());
+            if (!texto(System.getenv("SPRING_DATASOURCE_USERNAME"))) {
+                System.setProperty("spring.datasource.username", config.username());
+                System.setProperty("SPRING_DATASOURCE_USERNAME", config.username());
+            }
+            if (!texto(System.getenv("SPRING_DATASOURCE_PASSWORD"))) {
+                System.setProperty("spring.datasource.password", config.password());
+                System.setProperty("SPRING_DATASOURCE_PASSWORD", config.password());
+            }
+        });
+    }
+
+    static String encontrar(Map<String, String> env) {
+        String direta = normalizar(env.get("DATABASE_URL"));
+        if (direta != null) {
+            return direta;
+        }
+        for (Map.Entry<String, String> entry : env.entrySet()) {
+            if ("DATABASE_URL".equals(entry.getKey())) {
+                continue;
+            }
+            String valor = normalizar(entry.getValue());
+            if (valor != null) {
+                return valor;
+            }
+        }
+        return null;
+    }
+
+    static String normalizar(String value) {
+        if (value == null) {
+            return null;
+        }
+        String texto = value.trim();
+        if ((texto.startsWith("\"") && texto.endsWith("\"")) || (texto.startsWith("'") && texto.endsWith("'"))) {
+            texto = texto.substring(1, texto.length() - 1).trim();
+        }
+        if (texto.regionMatches(true, 0, "jdbc:", 0, "jdbc:".length())) {
+            texto = texto.substring("jdbc:".length());
+        }
+        if (texto.startsWith("postgres://") || texto.startsWith("postgresql://")) {
+            return texto;
+        }
+        return null;
+    }
+
+    private static boolean texto(String value) {
+        return value != null && !value.isBlank();
     }
 
     public static Optional<JdbcConfig> toJdbc(String databaseUrl) {
