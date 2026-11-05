@@ -3,7 +3,9 @@ package com.ljv.construcao.config;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.env.EnvironmentPostProcessor;
 import org.springframework.core.env.ConfigurableEnvironment;
+import org.springframework.core.env.EnumerablePropertySource;
 import org.springframework.core.env.MapPropertySource;
+import org.springframework.core.env.PropertySource;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -20,11 +22,13 @@ public class NeonDatabaseUrlEnvironmentPostProcessor implements EnvironmentPostP
 
     @Override
     public void postProcessEnvironment(ConfigurableEnvironment environment, SpringApplication application) {
-        if (hasText(environment.getProperty("SPRING_DATASOURCE_URL"))) {
+        // Não usar environment.getProperty("SPRING_DATASOURCE_URL"): o binding relaxado
+        // devolve spring.datasource.url, cujo padrão é localhost, e a DATABASE_URL era ignorada.
+        if (hasText(readRaw(environment, "SPRING_DATASOURCE_URL"))) {
             return;
         }
 
-        String databaseUrl = environment.getProperty("DATABASE_URL");
+        String databaseUrl = readRaw(environment, "DATABASE_URL");
         if (!hasText(databaseUrl)) {
             databaseUrl = readDotEnv("DATABASE_URL");
         }
@@ -34,15 +38,41 @@ public class NeonDatabaseUrlEnvironmentPostProcessor implements EnvironmentPostP
 
         NeonDatabaseUrl.toJdbc(databaseUrl).ifPresent(config -> {
             Map<String, Object> props = new HashMap<>();
-            props.put("SPRING_DATASOURCE_URL", config.jdbcUrl());
-            if (!hasText(environment.getProperty("SPRING_DATASOURCE_USERNAME"))) {
-                props.put("SPRING_DATASOURCE_USERNAME", config.username());
+            props.put("spring.datasource.url", config.jdbcUrl());
+            if (!hasText(readRaw(environment, "SPRING_DATASOURCE_USERNAME"))) {
+                props.put("spring.datasource.username", config.username());
             }
-            if (!hasText(environment.getProperty("SPRING_DATASOURCE_PASSWORD"))) {
-                props.put("SPRING_DATASOURCE_PASSWORD", config.password());
+            if (!hasText(readRaw(environment, "SPRING_DATASOURCE_PASSWORD"))) {
+                props.put("spring.datasource.password", config.password());
             }
             environment.getPropertySources().addFirst(new MapPropertySource("neonDatabaseUrl", props));
+            System.out.println("Banco configurado pela DATABASE_URL: " + config.jdbcUrl());
         });
+    }
+
+    /**
+     * Lê a chave exata, sem o binding que confunde {@code SPRING_DATASOURCE_URL}
+     * com {@code spring.datasource.url}.
+     */
+    static String readRaw(ConfigurableEnvironment environment, String key) {
+        for (PropertySource<?> source : environment.getPropertySources()) {
+            if ("configurationProperties".equals(source.getName())) {
+                continue;
+            }
+            Object value = null;
+            if (source instanceof EnumerablePropertySource<?> enumerable) {
+                for (String name : enumerable.getPropertyNames()) {
+                    if (key.equals(name)) {
+                        value = source.getProperty(name);
+                        break;
+                    }
+                }
+            }
+            if (value != null && !value.toString().isBlank()) {
+                return value.toString().trim();
+            }
+        }
+        return null;
     }
 
     static String readDotEnv(String key) {
