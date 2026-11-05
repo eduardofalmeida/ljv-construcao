@@ -20,29 +20,37 @@ public class NeonDatabaseUrlEnvironmentPostProcessor implements EnvironmentPostP
 
     @Override
     public void postProcessEnvironment(ConfigurableEnvironment environment, SpringApplication application) {
-        if (hasText(environment.getProperty("SPRING_DATASOURCE_URL"))) {
-            return;
-        }
-
-        String databaseUrl = environment.getProperty("DATABASE_URL");
+        // Não usar environment.getProperty("SPRING_DATASOURCE_URL"): o Spring também
+        // encontra spring.datasource.url do application.properties, que já traz o
+        // Postgres local como padrão. Isso fazia o DATABASE_URL do Neon ser ignorado
+        // e o backend subir apontando para localhost.
+        String databaseUrl = System.getenv("DATABASE_URL");
         if (!hasText(databaseUrl)) {
             databaseUrl = readDotEnv("DATABASE_URL");
         }
-        if (!hasText(databaseUrl)) {
+        if (!deveUsarDatabaseUrl(System.getenv("SPRING_DATASOURCE_URL"), databaseUrl)) {
             return;
         }
 
         NeonDatabaseUrl.toJdbc(databaseUrl).ifPresent(config -> {
             Map<String, Object> props = new HashMap<>();
-            props.put("SPRING_DATASOURCE_URL", config.jdbcUrl());
-            if (!hasText(environment.getProperty("SPRING_DATASOURCE_USERNAME"))) {
-                props.put("SPRING_DATASOURCE_USERNAME", config.username());
+            props.put("spring.datasource.url", config.jdbcUrl());
+            if (!hasText(System.getenv("SPRING_DATASOURCE_USERNAME"))) {
+                props.put("spring.datasource.username", config.username());
             }
-            if (!hasText(environment.getProperty("SPRING_DATASOURCE_PASSWORD"))) {
-                props.put("SPRING_DATASOURCE_PASSWORD", config.password());
+            if (!hasText(System.getenv("SPRING_DATASOURCE_PASSWORD"))) {
+                props.put("spring.datasource.password", config.password());
             }
             environment.getPropertySources().addFirst(new MapPropertySource("neonDatabaseUrl", props));
         });
+    }
+
+    /**
+     * DATABASE_URL só entra quando não há JDBC explícito. O padrão de
+     * application.properties não conta como explícito.
+     */
+    static boolean deveUsarDatabaseUrl(String springDatasourceUrl, String databaseUrl) {
+        return !hasText(springDatasourceUrl) && hasText(databaseUrl);
     }
 
     static String readDotEnv(String key) {
