@@ -31,8 +31,3 @@ api.interceptors.response.use(
 )
 
 export default api
-
-/** Base da API para chamadas fora do cliente axios (ex.: landing com axios direto). */
-export function apiBaseUrl() {
-  return baseURL
-}

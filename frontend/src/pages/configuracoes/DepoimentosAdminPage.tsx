@@ -182,7 +182,7 @@ export default function DepoimentosAdminPage() {
     setAprovando(id)
     try {
       await api.patch(`/depoimentos/${id}/aprovar`)
-      toast.success('Depoimento aprovado! Já aparece na landing page.')
+      toast.success('Depoimento aprovado.')
       carregar()
     } catch {
       toast.error('Erro ao aprovar')
@@ -238,11 +238,10 @@ export default function DepoimentosAdminPage() {
         </button>
       </div>
 
-      {/* Preview da landing page */}
       <div className="bg-accent-50 border border-accent-200 rounded-2xl px-5 py-4 flex items-center gap-3">
         <Eye size={16} className="text-accent-600 flex-shrink-0" />
         <p className="text-sm text-accent-800">
-          <span className="font-bold">Apenas depoimentos aprovados</span> aparecem na landing page, em tempo real.
+          <span className="font-bold">Apenas depoimentos aprovados</span> ficam publicados.
           Depoimentos pendentes e reprovados ficam visíveis somente aqui.
         </p>
       </div>
@@ -282,7 +281,7 @@ export default function DepoimentosAdminPage() {
           <p className="text-primary-500 font-semibold">Nenhum depoimento {filtro !== 'TODOS' ? STATUS_CFG[filtro as StatusDep]?.label.toLowerCase() : ''}</p>
           <p className="text-primary-400 text-sm mt-1">
             {filtro === 'PENDENTE' ? 'Tudo em dia! Nenhum depoimento aguarda análise.' :
-             filtro === 'APROVADO' ? 'Aprove depoimentos para que apareçam na landing page.' :
+             filtro === 'APROVADO' ? 'Nenhum depoimento aprovado ainda.' :
              'Nenhum depoimento foi enviado ainda.'}
           </p>
         </div>

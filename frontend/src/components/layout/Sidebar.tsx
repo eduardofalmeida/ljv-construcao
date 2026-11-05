@@ -156,16 +156,6 @@ export default function Sidebar({ aberta, fechar }: SidebarProps) {
           </NavLink>
         </div>
       </nav>
-
-      {/* Rodapé */}
-      <div className="p-4 border-t border-white/5">
-        <Link
-          to="/"
-          className="flex items-center gap-2 text-white/30 hover:text-white/60 text-xs transition-colors"
-        >
-          <span>← Voltar ao site</span>
-        </Link>
-      </div>
     </aside>
   )
 }
