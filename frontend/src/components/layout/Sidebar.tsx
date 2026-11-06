@@ -3,8 +3,8 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useConfigSite } from '../../contexts/ConfigSiteContext'
 import {
   LayoutDashboard, Users, Building2, FileText,
-  HardHat, DollarSign, Package, Truck, BarChart3, X,
-  Globe, UserCircle, ClipboardList, MessageSquare, Stamp
+  HardHat, DollarSign, X,
+  UserCircle, ClipboardList, Stamp
 } from 'lucide-react'
 import clsx from 'clsx'
 import LogoEmpresa from '../ui/LogoEmpresa'
@@ -22,12 +22,6 @@ const navItems = [
   { to: '/admin/funcionarios', icon: HardHat, label: 'Funcionários' },
   { to: '/admin/folha', icon: ClipboardList, label: 'Folha de Pagamento' },
   { to: '/admin/financeiro', icon: DollarSign, label: 'Financeiro' },
-]
-
-const navItemsEmBreve = [
-  { icon: Package, label: 'Materiais' },
-  { icon: Truck, label: 'Fornecedores' },
-  { icon: BarChart3, label: 'Relatórios' },
 ]
 
 export default function Sidebar({ aberta, fechar }: SidebarProps) {
@@ -82,23 +76,6 @@ export default function Sidebar({ aberta, fechar }: SidebarProps) {
           ))}
         </div>
 
-        {/* Em breve */}
-        <div className="space-y-1">
-          <div className="px-3 mb-3">
-            <span className="text-[10px] font-bold text-white/25 tracking-widest uppercase">Em Breve</span>
-          </div>
-          {navItemsEmBreve.map((item) => (
-            <div
-              key={item.label}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-white/25 cursor-not-allowed"
-            >
-              <item.icon size={18} />
-              {item.label}
-              <span className="ml-auto text-[10px] bg-white/5 text-white/25 px-1.5 py-0.5 rounded-md">Em breve</span>
-            </div>
-          ))}
-        </div>
-
         {/* Configurações */}
         <div className="space-y-1">
           <div className="px-3 mb-3">
@@ -133,32 +110,6 @@ export default function Sidebar({ aberta, fechar }: SidebarProps) {
           >
             <Stamp size={18} />
             Empresa e relatórios
-          </NavLink>
-          <NavLink
-            to="/admin/configuracoes-site"
-            onClick={fechar}
-            className={({ isActive }) => clsx(
-              'flex items-center gap-3 px-3 py-3 min-h-[44px] rounded-xl text-sm font-medium transition-all duration-150',
-              isActive
-                ? 'bg-accent-500 text-white shadow-lg shadow-accent-500/25'
-                : 'text-white/60 hover:text-white hover:bg-white/5'
-            )}
-          >
-            <Globe size={18} />
-            Configurações do Site
-          </NavLink>
-          <NavLink
-            to="/admin/depoimentos"
-            onClick={fechar}
-            className={({ isActive }) => clsx(
-              'flex items-center gap-3 px-3 py-3 min-h-[44px] rounded-xl text-sm font-medium transition-all duration-150',
-              isActive
-                ? 'bg-accent-500 text-white shadow-lg shadow-accent-500/25'
-                : 'text-white/60 hover:text-white hover:bg-white/5'
-            )}
-          >
-            <MessageSquare size={18} />
-            Depoimentos
           </NavLink>
         </div>
       </nav>
