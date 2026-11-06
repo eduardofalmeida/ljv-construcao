@@ -18,7 +18,8 @@ export function redimensionarImagem(file: File, maxSize = 480): Promise<string> 
         canvas.width = width
         canvas.height = height
         canvas.getContext('2d')!.drawImage(img, 0, 0, width, height)
-        resolve(canvas.toDataURL('image/jpeg', 0.85))
+        const manterTransparencia = file.type === 'image/png' || file.type === 'image/webp' || file.type === 'image/gif'
+        resolve(manterTransparencia ? canvas.toDataURL('image/png') : canvas.toDataURL('image/jpeg', 0.85))
       }
       img.onerror = reject
       img.src = ev.target?.result as string

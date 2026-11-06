@@ -60,13 +60,13 @@ export default function Header({ abrirSidebar }: HeaderProps) {
           <Menu size={22} />
         </button>
 
-        {config.empresa_logo ? (
-          <img src={config.empresa_logo} alt="" className="lg:hidden w-8 h-8 rounded-lg object-cover flex-shrink-0" />
+        {config.empresa_logo?.trim() ? (
+          <img src={config.empresa_logo} alt={config.empresa_nome || 'Empresa'} className="lg:hidden h-8 w-auto max-w-[7.5rem] rounded-lg object-contain bg-white p-0.5 flex-shrink-0" />
         ) : null}
 
         <div className="hidden sm:flex items-center gap-2 min-w-0">
-          {config.empresa_logo && (
-            <img src={config.empresa_logo} alt="" className="w-6 h-6 rounded-md object-cover" />
+          {config.empresa_logo?.trim() && (
+            <img src={config.empresa_logo} alt="" className="h-7 w-auto max-w-[6.5rem] rounded-md object-contain bg-white p-0.5" />
           )}
           <span className="text-xs font-semibold text-primary-300 uppercase tracking-widest truncate">
             {config.empresa_nome || 'LJV Construção'}

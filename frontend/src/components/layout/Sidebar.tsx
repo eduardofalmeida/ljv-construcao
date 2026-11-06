@@ -1,5 +1,6 @@
 import { NavLink, Link } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
+import { useConfigSite } from '../../contexts/ConfigSiteContext'
 import {
   LayoutDashboard, Users, Building2, FileText,
   HardHat, DollarSign, Package, Truck, BarChart3, X,
@@ -31,7 +32,9 @@ const navItemsEmBreve = [
 
 export default function Sidebar({ aberta, fechar }: SidebarProps) {
   const { usuario } = useAuth()
+  const { config } = useConfigSite()
   const foto = usuario?.fotoPerfil
+  const temImagem = Boolean(config.empresa_logo?.trim())
   return (
     <aside
       className={clsx(
@@ -42,9 +45,12 @@ export default function Sidebar({ aberta, fechar }: SidebarProps) {
       )}
     >
       {/* Logo */}
-      <div className="flex items-center justify-between h-16 px-5 border-b border-white/5">
-        <Link to="/admin/dashboard" className="flex items-center min-w-0 flex-1 overflow-hidden pr-2">
-          <LogoEmpresa variant="light" size="sm" />
+      <div className={clsx(
+        'flex items-center justify-between border-b border-white/5',
+        temImagem ? 'min-h-16 px-4 py-3' : 'h-16 px-5'
+      )}>
+        <Link to="/admin/dashboard" className="flex items-center min-w-0 flex-1 overflow-hidden pr-2" aria-label="Ir para o início">
+          <LogoEmpresa variant="light" size="lg" showName={!temImagem} />
         </Link>
         <button onClick={fechar} className="lg:hidden icon-btn text-white/70 hover:text-white hover:bg-white/10" aria-label="Fechar menu">
           <X size={20} />

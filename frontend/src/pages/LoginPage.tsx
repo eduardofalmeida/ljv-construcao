@@ -53,11 +53,9 @@ export default function LoginPage() {
           }}
         />
 
-        {/* Logo */}
+        {/* Imagem escolhida para a empresa */}
         <div className="relative z-10">
-          <div className="flex items-center gap-3">
-            <LogoEmpresa variant="light" size="lg" />
-          </div>
+          <LogoEmpresa variant="light" size="lg" destaque />
         </div>
 
         {/* Mensagem central */}
@@ -100,9 +98,9 @@ export default function LoginPage() {
       <div className="w-full lg:w-1/2 flex flex-col items-center justify-center px-6 py-12 bg-stone-50">
 
         <div className="w-full max-w-md">
-          {/* Logo mobile */}
-          <div className="lg:hidden flex items-center gap-2.5 mb-10">
-            <LogoEmpresa variant="dark" size="md" />
+          {/* Imagem da empresa no celular */}
+          <div className="lg:hidden mb-10">
+            <LogoEmpresa variant="dark" size="lg" destaque />
           </div>
 
           {/* Header */}

@@ -138,7 +138,7 @@ export default function ConfiguracoesEmpresaPage() {
         <div>
           <h1 className="page-title">Empresa e relatórios</h1>
           <p className="text-primary-500 text-sm mt-1">
-            Tudo o que aparece no cabeçalho e no rodapé do orçamento enviado ao cliente. O logo também vale na navbar e no login.
+            Tudo o que aparece no cabeçalho e no rodapé do orçamento enviado ao cliente. A imagem escolhida também aparece na tela de login e no menu do sistema.
           </p>
         </div>
         <button onClick={salvar} disabled={salvando} className="btn-primary min-h-[44px]">
@@ -149,11 +149,11 @@ export default function ConfiguracoesEmpresaPage() {
       <div className="card p-5 sm:p-6 space-y-4">
         <div className="flex items-center gap-2 pb-3 border-b border-stone-100">
           <ImagePlus size={16} className="text-primary-400" />
-          <h2 className="font-bold text-primary-900">Logo no cabeçalho</h2>
+          <h2 className="font-bold text-primary-900">Imagem da empresa</h2>
         </div>
         <div className="flex items-center gap-4 flex-wrap">
           {config.empresa_logo ? (
-            <img src={config.empresa_logo} alt="Logo" className="w-20 h-20 rounded-2xl object-cover border border-stone-200 bg-white" />
+            <img src={config.empresa_logo} alt="Imagem da empresa" className="h-20 w-auto max-w-[12rem] rounded-2xl object-contain border border-stone-200 bg-white p-1" />
           ) : (
             <div className="w-20 h-20 rounded-2xl bg-primary-900 flex items-center justify-center text-accent-400 font-black text-2xl">
               {(config.empresa_nome || 'L').charAt(0).toUpperCase()}
@@ -161,7 +161,7 @@ export default function ConfiguracoesEmpresaPage() {
           )}
           <div className="flex gap-2 flex-wrap">
             <button type="button" onClick={() => inputLogo.current?.click()} className="btn-outline min-h-[44px]">
-              <ImagePlus size={16} /> {config.empresa_logo ? 'Trocar logo' : 'Enviar logo'}
+              <ImagePlus size={16} /> {config.empresa_logo ? 'Trocar imagem' : 'Escolher imagem'}
             </button>
             {config.empresa_logo && (
               <button type="button" onClick={() => onChange('empresa_logo', '')} className="btn-outline min-h-[44px] text-red-500 border-red-200">
@@ -218,7 +218,7 @@ export default function ConfiguracoesEmpresaPage() {
           <div className="flex gap-3 items-start justify-between pb-4 mb-4 border-b-2 border-primary-900">
             <div className="flex gap-3 min-w-0">
               {preview.logo ? (
-                <img src={preview.logo} alt="" className="w-12 h-12 rounded-xl object-cover border border-stone-200" />
+                <img src={preview.logo} alt="" className="h-12 w-auto max-w-[8rem] rounded-xl object-contain border border-stone-200 bg-white p-0.5" />
               ) : (
                 <div className="w-12 h-12 rounded-xl bg-primary-900 text-accent-400 font-black flex items-center justify-center">
                   {preview.nome.charAt(0)}
