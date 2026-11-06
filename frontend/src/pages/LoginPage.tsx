@@ -62,13 +62,13 @@ export default function LoginPage() {
         <div className="relative z-10 space-y-6">
           <div className="w-16 h-1 bg-accent-500 rounded-full" />
           <h1 className="text-5xl font-black text-white leading-tight">
-            Sistema de<br />
-            <span className="text-accent-400">Gestão</span><br />
-            Completa
+            Feito para a<br />
+            <span className="text-accent-400">LJV</span><br />
+            Construção
           </h1>
           <p className="text-white/50 text-lg leading-relaxed max-w-sm">
-            Gerencie obras, clientes, funcionários e financeiro
-            em um único lugar, com organização e eficiência.
+            O sistema interno da construtora. Obras, equipe,
+            orçamentos e financeiro da LJV, num só lugar.
           </p>
 
           <div className="grid grid-cols-2 gap-4 pt-4">
