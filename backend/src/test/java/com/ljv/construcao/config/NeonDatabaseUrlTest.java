@@ -1,6 +1,10 @@
 package com.ljv.construcao.config;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.context.properties.source.ConfigurationPropertySources;
+import org.springframework.core.env.MapPropertySource;
+import org.springframework.core.env.StandardEnvironment;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -26,6 +30,18 @@ class NeonDatabaseUrlTest {
                 config.jdbcUrl()
         );
         assertFalse(config.jdbcUrl().contains("channel_binding"));
+    }
+
+    @Test
+    void hostDiretoNaoDesligaPreparedStatement() {
+        var config = NeonDatabaseUrl.toJdbc(
+                "postgresql://usuario:senha@ep-exemplo.c-9.us-east-2.aws.neon.tech/neondb?sslmode=require"
+        ).orElseThrow();
+
+        assertEquals(
+                "jdbc:postgresql://ep-exemplo.c-9.us-east-2.aws.neon.tech:5432/neondb?sslmode=require",
+                config.jdbcUrl()
+        );
     }
 
     @Test
@@ -60,27 +76,25 @@ class NeonDatabaseUrlTest {
     }
 
     @Test
-    void databaseUrlDoNeonNaoPerdeParaOPadraoLocal() {
-        assertTrue(NeonDatabaseUrlEnvironmentPostProcessor.deveUsarDatabaseUrl(
-                null,
-                "postgresql://neondb_owner:senha@ep-exemplo.aws.neon.tech/neondb"
-        ));
-        assertFalse(NeonDatabaseUrlEnvironmentPostProcessor.deveUsarDatabaseUrl(
-                "jdbc:postgresql://postgres.internal:5432/ljv",
-                "postgresql://neondb_owner:senha@ep-exemplo.aws.neon.tech/neondb"
-        ));
-        assertFalse(NeonDatabaseUrlEnvironmentPostProcessor.deveUsarDatabaseUrl(null, "  "));
-    }
+    void databaseUrlGanhaDoLocalhostMesmoComBindingRelaxado() {
+        StandardEnvironment environment = new StandardEnvironment();
+        environment.getPropertySources().addLast(new MapPropertySource("applicationConfig", Map.of(
+                "spring.datasource.url", "jdbc:postgresql://localhost:5432/ljv_construcao",
+                "spring.datasource.username", "ljv_user",
+                "spring.datasource.password", "ljv_pass"
+        )));
+        environment.getPropertySources().addFirst(new MapPropertySource("renderEnv", Map.of(
+                "DATABASE_URL", "postgresql://neondb_owner:senha@ep-exemplo-pooler.c-9.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
+        )));
+        ConfigurationPropertySources.attach(environment);
 
-    @Test
-    void hostDiretoNaoDesligaPreparedStatement() {
-        var config = NeonDatabaseUrl.toJdbc(
-                "postgresql://usuario:senha@ep-exemplo.c-9.us-east-2.aws.neon.tech/neondb?sslmode=require"
-        ).orElseThrow();
+        new NeonDatabaseUrlEnvironmentPostProcessor().postProcessEnvironment(environment, new SpringApplication());
 
         assertEquals(
-                "jdbc:postgresql://ep-exemplo.c-9.us-east-2.aws.neon.tech:5432/neondb?sslmode=require",
-                config.jdbcUrl()
+                "jdbc:postgresql://ep-exemplo-pooler.c-9.us-east-2.aws.neon.tech:5432/neondb?sslmode=require&prepareThreshold=0",
+                environment.getProperty("spring.datasource.url")
         );
+        assertEquals("neondb_owner", environment.getProperty("spring.datasource.username"));
+        assertEquals("senha", environment.getProperty("spring.datasource.password"));
     }
 }

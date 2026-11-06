@@ -3,7 +3,9 @@ package com.ljv.construcao.config;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.env.EnvironmentPostProcessor;
 import org.springframework.core.env.ConfigurableEnvironment;
+import org.springframework.core.env.EnumerablePropertySource;
 import org.springframework.core.env.MapPropertySource;
+import org.springframework.core.env.PropertySource;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -20,37 +22,57 @@ public class NeonDatabaseUrlEnvironmentPostProcessor implements EnvironmentPostP
 
     @Override
     public void postProcessEnvironment(ConfigurableEnvironment environment, SpringApplication application) {
-        // Não usar environment.getProperty("SPRING_DATASOURCE_URL"): o Spring também
-        // encontra spring.datasource.url do application.properties, que já traz o
-        // Postgres local como padrão. Isso fazia o DATABASE_URL do Neon ser ignorado
-        // e o backend subir apontando para localhost.
-        String databaseUrl = System.getenv("DATABASE_URL");
+        // Não usar environment.getProperty("SPRING_DATASOURCE_URL"): o binding relaxado
+        // devolve spring.datasource.url, cujo padrão é localhost, e a DATABASE_URL era ignorada.
+        if (hasText(readRaw(environment, "SPRING_DATASOURCE_URL"))) {
+            return;
+        }
+
+        String databaseUrl = readRaw(environment, "DATABASE_URL");
         if (!hasText(databaseUrl)) {
             databaseUrl = readDotEnv("DATABASE_URL");
         }
-        if (!deveUsarDatabaseUrl(System.getenv("SPRING_DATASOURCE_URL"), databaseUrl)) {
+        if (!hasText(databaseUrl)) {
             return;
         }
 
         NeonDatabaseUrl.toJdbc(databaseUrl).ifPresent(config -> {
             Map<String, Object> props = new HashMap<>();
             props.put("spring.datasource.url", config.jdbcUrl());
-            if (!hasText(System.getenv("SPRING_DATASOURCE_USERNAME"))) {
+            if (!hasText(readRaw(environment, "SPRING_DATASOURCE_USERNAME"))) {
                 props.put("spring.datasource.username", config.username());
             }
-            if (!hasText(System.getenv("SPRING_DATASOURCE_PASSWORD"))) {
+            if (!hasText(readRaw(environment, "SPRING_DATASOURCE_PASSWORD"))) {
                 props.put("spring.datasource.password", config.password());
             }
             environment.getPropertySources().addFirst(new MapPropertySource("neonDatabaseUrl", props));
+            System.out.println("Banco configurado pela DATABASE_URL: " + config.jdbcUrl());
         });
     }
 
     /**
-     * DATABASE_URL só entra quando não há JDBC explícito. O padrão de
-     * application.properties não conta como explícito.
+     * Lê a chave exata, sem o binding que confunde {@code SPRING_DATASOURCE_URL}
+     * com {@code spring.datasource.url}.
      */
-    static boolean deveUsarDatabaseUrl(String springDatasourceUrl, String databaseUrl) {
-        return !hasText(springDatasourceUrl) && hasText(databaseUrl);
+    static String readRaw(ConfigurableEnvironment environment, String key) {
+        for (PropertySource<?> source : environment.getPropertySources()) {
+            if ("configurationProperties".equals(source.getName())) {
+                continue;
+            }
+            Object value = null;
+            if (source instanceof EnumerablePropertySource<?> enumerable) {
+                for (String name : enumerable.getPropertyNames()) {
+                    if (key.equals(name)) {
+                        value = source.getProperty(name);
+                        break;
+                    }
+                }
+            }
+            if (value != null && !value.toString().isBlank()) {
+                return value.toString().trim();
+            }
+        }
+        return null;
     }
 
     static String readDotEnv(String key) {

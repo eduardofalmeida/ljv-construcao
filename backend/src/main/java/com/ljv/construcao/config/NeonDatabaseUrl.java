@@ -27,10 +27,13 @@ public final class NeonDatabaseUrl {
      */
     public static void aplicarNoProcesso() {
         if (texto(System.getenv("SPRING_DATASOURCE_URL"))) {
+            System.out.println("SPRING_DATASOURCE_URL já definida; a connection string do Neon não será usada.");
             return;
         }
         String databaseUrl = encontrar(System.getenv());
         if (databaseUrl == null) {
+            System.out.println("Nenhuma connection string postgresql:// encontrada no ambiente do processo.");
+            listarChavesDeBanco();
             return;
         }
         toJdbc(databaseUrl).ifPresent(config -> {
@@ -44,6 +47,7 @@ public final class NeonDatabaseUrl {
                 System.setProperty("spring.datasource.password", config.password());
                 System.setProperty("SPRING_DATASOURCE_PASSWORD", config.password());
             }
+            System.out.println("Banco configurado pela connection string: " + config.jdbcUrl());
         });
     }
 
@@ -58,6 +62,7 @@ public final class NeonDatabaseUrl {
             }
             String valor = normalizar(entry.getValue());
             if (valor != null) {
+                System.out.println("Connection string lida da variável " + entry.getKey());
                 return valor;
             }
         }
@@ -79,6 +84,19 @@ public final class NeonDatabaseUrl {
             return texto;
         }
         return null;
+    }
+
+    private static void listarChavesDeBanco() {
+        System.getenv().keySet().stream()
+                .filter(NeonDatabaseUrl::chaveDeBanco)
+                .sorted()
+                .forEach(chave -> System.out.println("Variável presente sem connection string: " + chave));
+    }
+
+    private static boolean chaveDeBanco(String chave) {
+        String nome = chave.toUpperCase(Locale.ROOT);
+        return nome.contains("DATA") || nome.contains("PG") || nome.contains("JDBC")
+                || nome.contains("NEON") || nome.contains("POSTGRES") || nome.contains("SQL");
     }
 
     private static boolean texto(String value) {
