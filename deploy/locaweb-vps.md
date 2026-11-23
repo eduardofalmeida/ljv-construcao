@@ -1,131 +1,85 @@
-# Deploy na VPS Locaweb
+# Deploy na VPS Locaweb (otimizado para 4GB)
 
 - IP: `http://177.153.22.65`
 - Domínio: `http://www.ljvconstrucao.com.br` / `http://ljvconstrucao.com.br`
 
 ## DNS na Registro.br
 
-Em [registro.br](https://registro.br) → domínio → **DNS** / editar zona:
-
 | Tipo | Nome | Dados |
 |------|------|--------|
-| A | `@` (em branco / domínio) | `177.153.22.65` |
+| A | `@` | `177.153.22.65` |
 | A | `www` | `177.153.22.65` |
 
-Salve e aguarde a propagação (minutos a algumas horas).
-
-## 1. Entrar na VPS (no Mac)
+## 1. Entrar na VPS
 
 ```bash
 ssh root@177.153.22.65
 ```
 
-## 2. Instalar Docker (só na primeira vez)
+## 2. Docker (só na primeira vez)
 
 ```bash
 apt update && apt upgrade -y
 apt install -y ca-certificates curl git ufw
 curl -fsSL https://get.docker.com | sh
 systemctl enable --now docker
-
-ufw allow OpenSSH
-ufw allow 80/tcp
-ufw --force enable
+ufw allow OpenSSH && ufw allow 80/tcp && ufw --force enable
 ```
 
-### Swap (obrigatório em VPS 4GB)
-
-Sem swap o build do Java trava a máquina (SSH some).
+## 3. Projeto + `.env.prod`
 
 ```bash
-swapoff /swapfile 2>/dev/null || true
-fallocate -l 4G /swapfile || dd if=/dev/zero of=/swapfile bs=1M count=4096
-chmod 600 /swapfile
-mkswap /swapfile
-swapon /swapfile
-grep -q '/swapfile' /etc/fstab || echo '/swapfile none swap sw 0 0' >> /etc/fstab
-free -h
+cd /opt/ljv-construcao   # ou clone se ainda não tiver
+git pull origin main
+cp -n .env.prod.example .env.prod
+nano .env.prod           # defina POSTGRES_PASSWORD
 ```
 
-Tem que aparecer ~4G em `Swap` no `free -h` **antes** de qualquer `docker compose build`.
+## 4. Subir tudo (recomendado)
 
-## 3. Clonar o projeto
+Um comando só — swap, Postgres, JAR fora do Docker, builds sequenciais e `up`:
 
 ```bash
-mkdir -p /opt
-cd /opt
-git clone https://github.com/eduardofalmeida/ljv-construcao.git
-cd ljv-construcao
+bash deploy/up-prod.sh
 ```
 
-Se o repositório for privado, use um Personal Access Token no clone ou uma deploy key.
+Isso evita o crash por falta de RAM (build paralelo + Maven no Docker).
 
-## 4. Configurar variáveis
-
-```bash
-cp .env.prod.example .env.prod
-nano .env.prod
-```
-
-Troque `POSTGRES_PASSWORD` por uma senha forte. Salve (`Ctrl+O`, Enter, `Ctrl+X`).
-
-## 5. Subir a stack (backend fora do Docker)
-
-Na VPS 4GB, **não** compile o Java dentro do `docker build` — trava a máquina.
-Compile o JAR no sistema e só depois monte a imagem leve.
-
-```bash
-# 1) banco
-docker compose -f docker-compose.prod.yml --env-file .env.prod up -d postgres
-
-# 2) compilar JAR (fora do Docker; 5–15 min na 1ª vez)
-bash deploy/build-backend.sh
-
-# 3) imagem leve do backend (só copia o JAR — rápido)
-docker compose -f docker-compose.prod.yml --env-file .env.prod build backend
-
-# 4) frontend (sozinho)
-docker compose -f docker-compose.prod.yml --env-file .env.prod build frontend
-
-# 5) sobe tudo
-docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
-```
+## 5. Conferir
 
 ```bash
 docker compose -f docker-compose.prod.yml --env-file .env.prod ps
-docker compose -f docker-compose.prod.yml --env-file .env.prod logs -f --tail=80
+curl -I http://127.0.0.1/
+curl -s http://127.0.0.1/api/actuator/health
 ```
 
-## 6. Acessar
+- Site: http://177.153.22.65 ou http://www.ljvconstrucao.com.br  
+- Login: `admin` / `admin123`
 
-- Site: http://www.ljvconstrucao.com.br (ou http://177.153.22.65 enquanto o DNS propaga)
-- Login: http://www.ljvconstrucao.com.br/login  
-- Usuário inicial: `admin` / `admin123` (troque a senha depois)
-
-Depois de apontar o DNS, na VPS atualize o CORS no `.env.prod` e reinicie o backend:
-
-```bash
-# APP_CORS_ALLOWED_ORIGINS=http://www.ljvconstrucao.com.br,http://ljvconstrucao.com.br,http://177.153.22.65
-docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
-```
-
-## Atualizar depois de um push no GitHub
+## Atualizar depois de um `git push`
 
 ```bash
 cd /opt/ljv-construcao
-git pull
-docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+git pull origin main
+bash deploy/up-prod.sh
 ```
+
+## O que foi otimizado
+
+| Peça | Ajuste |
+|------|--------|
+| JVM | G1, MaxRAMPercentage 65%, TieredStopAtLevel=1 (sobe mais rápido) |
+| Spring | perfil `prod`, pool Hikari 3, Tomcat 40 threads, Actuator health |
+| Postgres | shared_buffers 128MB, max_connections 40, limites de RAM |
+| Compose | mem_limit por serviço; frontend só sobe com backend healthy |
+| Nginx | gzip + keepalive para o backend |
+| Build | JAR no host; imagens uma de cada vez |
 
 ## Comandos úteis
 
 ```bash
-# Parar
-docker compose -f docker-compose.prod.yml --env-file .env.prod down
-
-# Logs do backend
+docker compose -f docker-compose.prod.yml --env-file .env.prod logs -f --tail=80
 docker logs -f ljv-backend
-
-# Reiniciar só o backend
 docker compose -f docker-compose.prod.yml --env-file .env.prod restart backend
+docker compose -f docker-compose.prod.yml --env-file .env.prod down
 ```

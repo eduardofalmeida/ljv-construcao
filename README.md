@@ -160,11 +160,7 @@ Resumo:
 
 ```bash
 cp .env.prod.example .env.prod   # ajuste a senha do Postgres
-# VPS 4GB: swap + JAR fora do Docker (ver deploy/locaweb-vps.md)
-bash deploy/build-backend.sh
-docker compose -f docker-compose.prod.yml --env-file .env.prod build backend
-docker compose -f docker-compose.prod.yml --env-file .env.prod build frontend
-docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
+bash deploy/up-prod.sh           # swap + builds sequenciais + up (VPS 4GB)
 ```
 
 Acesso: `http://www.ljvconstrucao.com.br` (ou `http://177.153.22.65`). Login inicial: `admin` / `admin123`.

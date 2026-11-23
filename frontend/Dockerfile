@@ -1,6 +1,7 @@
-# Build do frontend (Vite) + Nginx servindo estático e proxy /api
+# Build do frontend (Vite) + Nginx — stages separados para imagem final mínima
 FROM node:20-alpine AS build
 WORKDIR /app
+ENV NODE_OPTIONS=--max-old-space-size=768
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .

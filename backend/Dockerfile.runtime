@@ -1,7 +1,28 @@
-# Imagem leve: espera o JAR já compilado em target/
-# Na VPS: mvn package (fora do Docker) e depois docker compose build backend
+# Imagem leve: JAR já compilado em target/ (ver deploy/build-backend.sh)
 FROM eclipse-temurin:21-jre-jammy
 WORKDIR /app
+
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends curl \
+  && rm -rf /var/lib/apt/lists/*
+
 COPY target/construcao-0.0.1-SNAPSHOT.jar app.jar
+
+# JVM afinada para container ~768MB–1GB na VPS 4GB
+ENV JAVA_TOOL_OPTIONS="\
+-XX:+UseContainerSupport \
+-XX:MaxRAMPercentage=65.0 \
+-XX:InitialRAMPercentage=25.0 \
+-XX:+UseG1GC \
+-XX:MaxGCPauseMillis=200 \
+-XX:+ExitOnOutOfMemoryError \
+-XX:TieredStopAtLevel=1 \
+-Djava.security.egd=file:/dev/./urandom \
+-Dfile.encoding=UTF-8"
+
 EXPOSE 8080
-ENTRYPOINT ["java", "-XX:MaxRAMPercentage=50.0", "-XX:+ExitOnOutOfMemoryError", "-jar", "app.jar"]
+
+HEALTHCHECK --interval=20s --timeout=5s --start-period=90s --retries=8 \
+  CMD curl -fsS http://127.0.0.1:8080/api/actuator/health/liveness >/dev/null || exit 1
+
+ENTRYPOINT ["java", "-jar", "app.jar"]

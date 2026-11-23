@@ -1,5 +1,5 @@
-# Produção na VPS (Locaweb): Postgres + Backend + Frontend (Nginx)
-# Uso: docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+# Produção VPS 4GB (Locaweb): limites de RAM + healthchecks + Postgres afinado
+# Preferir: bash deploy/up-prod.sh
 
 services:
   postgres:
@@ -10,6 +10,26 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-ljv_construcao}
       POSTGRES_USER: ${POSTGRES_USER:-ljv_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD no .env.prod}
+    command:
+      - postgres
+      - -c
+      - shared_buffers=128MB
+      - -c
+      - effective_cache_size=512MB
+      - -c
+      - work_mem=4MB
+      - -c
+      - maintenance_work_mem=64MB
+      - -c
+      - max_connections=40
+      - -c
+      - wal_buffers=16MB
+      - -c
+      - checkpoint_completion_target=0.9
+      - -c
+      - random_page_cost=1.1
+      - -c
+      - log_min_duration_statement=1000
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -17,6 +37,9 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 20s
+    mem_limit: 768m
+    mem_reservation: 256m
     networks:
       - ljv
 
@@ -28,6 +51,7 @@ services:
     restart: unless-stopped
     environment:
       PORT: "8080"
+      SPRING_PROFILES_ACTIVE: prod
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-ljv_construcao}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-ljv_user}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
@@ -36,9 +60,19 @@ services:
       SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
       APP_DEV_SEED_DATA: ${APP_DEV_SEED_DATA:-true}
       JPA_DDL_AUTO: ${JPA_DDL_AUTO:-update}
+      HIKARI_MAX_POOL_SIZE: ${HIKARI_MAX_POOL_SIZE:-3}
+      TOMCAT_MAX_THREADS: ${TOMCAT_MAX_THREADS:-40}
     depends_on:
       postgres:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/api/actuator/health/liveness"]
+      interval: 20s
+      timeout: 5s
+      retries: 8
+      start_period: 120s
+    mem_limit: 900m
+    mem_reservation: 400m
     networks:
       - ljv
 
@@ -49,7 +83,10 @@ services:
     ports:
       - "${HTTP_PORT:-80}:80"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
+    mem_limit: 128m
+    mem_reservation: 32m
     networks:
       - ljv
 
