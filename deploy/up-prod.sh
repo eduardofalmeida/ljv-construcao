@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Sobe a stack de produção na VPS 4GB na ordem segura (sem build paralelo).
+# Sobe a stack na VPS SEM compilar Java/Node (usa imagens já prontas).
+# Imagens: enviadas pelo Mac (deploy/ship-from-mac.sh) ou puxadas do GHCR.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
@@ -12,38 +13,44 @@ if [[ ! -f "$ENV_FILE" ]]; then
   exit 1
 fi
 
-echo "==> Swap"
+# shellcheck disable=SC1090
+set -a
+# carrega só para ler BACKEND_IMAGE (sem exportar senha à toa em logs)
+source "$ENV_FILE"
+set +a
+
 bash deploy/ensure-swap.sh
 
-echo "==> Postgres"
-"${COMPOSE[@]}" up -d postgres
-"${COMPOSE[@]}" exec -T postgres pg_isready -U "${POSTGRES_USER:-ljv_user}" -d "${POSTGRES_DB:-ljv_construcao}" || true
+BACKEND_IMAGE="${BACKEND_IMAGE:-ljv-backend:latest}"
+FRONTEND_IMAGE="${FRONTEND_IMAGE:-ljv-frontend:latest}"
 
-echo "==> Compilar backend (fora do Docker)"
-bash deploy/build-backend.sh
+if [[ "$BACKEND_IMAGE" == ghcr.io/* ]] || [[ "$FRONTEND_IMAGE" == ghcr.io/* ]]; then
+  echo "==> Login GHCR (se o pacote for privado)"
+  if [[ -n "${GHCR_TOKEN:-}" ]]; then
+    echo "$GHCR_TOKEN" | docker login ghcr.io -u "${GHCR_USER:-eduardofalmeida}" --password-stdin
+  fi
+  echo "==> Pull das imagens"
+  docker pull "$BACKEND_IMAGE"
+  docker pull "$FRONTEND_IMAGE"
+else
+  if ! docker image inspect "$BACKEND_IMAGE" >/dev/null 2>&1; then
+    echo "Imagem $BACKEND_IMAGE não encontrada nesta VPS."
+    echo "NÃO compile aqui (trava a máquina de 4GB)."
+    echo "No Mac, rode:  bash deploy/ship-from-mac.sh"
+    exit 1
+  fi
+  if ! docker image inspect "$FRONTEND_IMAGE" >/dev/null 2>&1; then
+    echo "Imagem $FRONTEND_IMAGE não encontrada nesta VPS."
+    echo "No Mac, rode:  bash deploy/ship-from-mac.sh"
+    exit 1
+  fi
+fi
 
-echo "==> Imagem backend (leve)"
-"${COMPOSE[@]}" build backend
-
-echo "==> Imagem frontend"
-"${COMPOSE[@]}" build frontend
-
-echo "==> Subir stack"
+echo "==> Subindo Postgres + backend + frontend"
 "${COMPOSE[@]}" up -d
 
 echo "==> Status"
 "${COMPOSE[@]}" ps
 echo
-echo "Aguardando backend healthy (até ~2 min)..."
-for i in $(seq 1 30); do
-  if "${COMPOSE[@]}" exec -T backend curl -fsS http://127.0.0.1:8080/api/actuator/health/liveness >/dev/null 2>&1; then
-    echo "Backend OK"
-    break
-  fi
-  sleep 4
-done
-
-"${COMPOSE[@]}" ps
-echo
 echo "Site: http://177.153.22.65  |  http://www.ljvconstrucao.com.br"
-echo "Login: admin / admin123 (troque depois)"
+echo "Login: admin / admin123"

@@ -1,62 +1,25 @@
-# Deploy na VPS Locaweb (otimizado para 4GB)
+# Deploy na VPS Locaweb (4GB) — sem compilar na VPS
 
-- IP: `http://177.153.22.65`
-- Domínio: `http://www.ljvconstrucao.com.br` / `http://ljvconstrucao.com.br`
+A VPS **não aguenta** Maven/Node no build. Compilar trava a máquina (SSH some).
 
-## DNS na Registro.br
+## Caminho recomendado agora: build no Mac → envia imagens
 
-| Tipo | Nome | Dados |
-|------|------|--------|
-| A | `@` | `177.153.22.65` |
-| A | `www` | `177.153.22.65` |
-
-## 1. Entrar na VPS
+### No Mac (com Docker Desktop instalado)
 
 ```bash
-ssh root@177.153.22.65
-```
-
-## 2. Docker (só na primeira vez)
-
-```bash
-apt update && apt upgrade -y
-apt install -y ca-certificates curl git ufw
-curl -fsSL https://get.docker.com | sh
-systemctl enable --now docker
-ufw allow OpenSSH && ufw allow 80/tcp && ufw --force enable
-```
-
-## 3. Projeto + `.env.prod`
-
-```bash
-cd /opt/ljv-construcao   # ou clone se ainda não tiver
+cd ~/caminho/do/ljv-construcao
 git pull origin main
-cp -n .env.prod.example .env.prod
-nano .env.prod           # defina POSTGRES_PASSWORD
+bash deploy/ship-from-mac.sh
 ```
 
-## 4. Subir tudo (recomendado)
+Isso:
+1. Compila backend + frontend **no Mac**
+2. Envia as imagens por SSH para `177.153.22.65`
+3. Sobe Postgres + app na VPS
 
-Um comando só — swap, Postgres, JAR fora do Docker, builds sequenciais e `up`:
+Login: http://177.153.22.65/login → `admin` / `admin123`
 
-```bash
-bash deploy/up-prod.sh
-```
-
-Isso evita o crash por falta de RAM (build paralelo + Maven no Docker).
-
-## 5. Conferir
-
-```bash
-docker compose -f docker-compose.prod.yml --env-file .env.prod ps
-curl -I http://127.0.0.1/
-curl -s http://127.0.0.1/api/actuator/health
-```
-
-- Site: http://177.153.22.65 ou http://www.ljvconstrucao.com.br  
-- Login: `admin` / `admin123`
-
-## Atualizar depois de um `git push`
+### Na VPS (só se as imagens já estiverem lá)
 
 ```bash
 cd /opt/ljv-construcao
@@ -64,22 +27,44 @@ git pull origin main
 bash deploy/up-prod.sh
 ```
 
-## O que foi otimizado
+## DNS (Registro.br)
 
-| Peça | Ajuste |
-|------|--------|
-| JVM | G1, MaxRAMPercentage 65%, TieredStopAtLevel=1 (sobe mais rápido) |
-| Spring | perfil `prod`, pool Hikari 3, Tomcat 40 threads, Actuator health |
-| Postgres | shared_buffers 128MB, max_connections 40, limites de RAM |
-| Compose | mem_limit por serviço; frontend só sobe com backend healthy |
-| Nginx | gzip + keepalive para o backend |
-| Build | JAR no host; imagens uma de cada vez |
+| Tipo | Nome | Dados |
+|------|------|--------|
+| A | `@` | `177.153.22.65` |
+| A | `www` | `177.153.22.65` |
+
+## Depois: imagens pelo GitHub Actions (GHCR)
+
+A cada push na `main`, o workflow gera imagens em:
+
+- `ghcr.io/eduardofalmeida/ljv-construcao-backend:latest`
+- `ghcr.io/eduardofalmeida/ljv-construcao-frontend:latest`
+
+No `.env.prod` da VPS:
+
+```text
+BACKEND_IMAGE=ghcr.io/eduardofalmeida/ljv-construcao-backend:latest
+FRONTEND_IMAGE=ghcr.io/eduardofalmeida/ljv-construcao-frontend:latest
+GHCR_USER=eduardofalmeida
+GHCR_TOKEN=seu_pat_com_read_packages
+```
+
+Depois: `bash deploy/up-prod.sh`
+
+## NÃO faça na VPS
+
+- `docker compose ... build backend`
+- `bash deploy/build-backend.sh`
+- `mvn package`
+
+Isso estoura a RAM de 4GB.
 
 ## Comandos úteis
 
 ```bash
-docker compose -f docker-compose.prod.yml --env-file .env.prod logs -f --tail=80
+ssh root@177.153.22.65
+cd /opt/ljv-construcao
+docker compose -f docker-compose.prod.yml --env-file .env.prod ps
 docker logs -f ljv-backend
-docker compose -f docker-compose.prod.yml --env-file .env.prod restart backend
-docker compose -f docker-compose.prod.yml --env-file .env.prod down
 ```

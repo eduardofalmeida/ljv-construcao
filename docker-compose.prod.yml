@@ -1,5 +1,5 @@
-# Produção VPS 4GB (Locaweb): limites de RAM + healthchecks + Postgres afinado
-# Preferir: bash deploy/up-prod.sh
+# Produção VPS 4GB — preferir imagens pré-buildadas (GHCR ou ship-from-mac)
+# bash deploy/up-prod.sh
 
 services:
   postgres:
@@ -44,9 +44,7 @@ services:
       - ljv
 
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile.runtime
+    image: ${BACKEND_IMAGE:-ljv-backend:latest}
     container_name: ljv-backend
     restart: unless-stopped
     environment:
@@ -77,7 +75,7 @@ services:
       - ljv
 
   frontend:
-    build: ./frontend
+    image: ${FRONTEND_IMAGE:-ljv-frontend:latest}
     container_name: ljv-frontend
     restart: unless-stopped
     ports:

@@ -158,12 +158,14 @@ Guia completo: [`deploy/locaweb-vps.md`](deploy/locaweb-vps.md)
 
 Resumo:
 
+**Não compile na VPS 4GB** (trava). No Mac com Docker:
+
 ```bash
-cp .env.prod.example .env.prod   # ajuste a senha do Postgres
-bash deploy/up-prod.sh           # swap + builds sequenciais + up (VPS 4GB)
+cp .env.prod.example .env.prod   # na VPS, uma vez
+bash deploy/ship-from-mac.sh     # build no Mac + envia imagens + sobe
 ```
 
-Acesso: `http://www.ljvconstrucao.com.br` (ou `http://177.153.22.65`). Login inicial: `admin` / `admin123`.
+Acesso: `http://www.ljvconstrucao.com.br` (ou `http://177.153.22.65`). Login: `admin` / `admin123`.
 
 ---
 
