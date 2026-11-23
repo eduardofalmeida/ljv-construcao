@@ -1,4 +1,8 @@
-.env
 target
-.idea
+.git
+*.md
+.env
+.env.*
+!.env.example
 *.iml
+.idea

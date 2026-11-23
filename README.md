@@ -150,6 +150,23 @@ A identidade visual da LJV Construção foi desenvolvida com:
 
 ---
 
+## Deploy na VPS (Locaweb)
+
+Stack de produção: Postgres + Spring Boot + Nginx (frontend).
+
+Guia completo: [`deploy/locaweb-vps.md`](deploy/locaweb-vps.md)
+
+Resumo:
+
+```bash
+cp .env.prod.example .env.prod   # ajuste a senha do Postgres
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+```
+
+Acesso pelo IP: `http://177.153.22.65` (login: `admin` / `admin123` na primeira subida).
+
+---
+
 ## Variáveis de ambiente (Railway)
 
 O backend lê Postgres, porta, CORS e seed por variáveis de ambiente.
