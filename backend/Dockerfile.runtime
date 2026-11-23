@@ -1,0 +1,7 @@
+# Imagem leve: espera o JAR já compilado em target/
+# Na VPS: mvn package (fora do Docker) e depois docker compose build backend
+FROM eclipse-temurin:21-jre-jammy
+WORKDIR /app
+COPY target/construcao-0.0.1-SNAPSHOT.jar app.jar
+EXPOSE 8080
+ENTRYPOINT ["java", "-XX:MaxRAMPercentage=50.0", "-XX:+ExitOnOutOfMemoryError", "-jar", "app.jar"]

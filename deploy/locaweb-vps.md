@@ -69,21 +69,25 @@ nano .env.prod
 
 Troque `POSTGRES_PASSWORD` por uma senha forte. Salve (`Ctrl+O`, Enter, `Ctrl+X`).
 
-## 5. Subir a stack (um serviço por vez)
+## 5. Subir a stack (backend fora do Docker)
 
-**Não** use `up -d --build` na primeira vez — frontend e backend juntos estouram a RAM.
+Na VPS 4GB, **não** compile o Java dentro do `docker build` — trava a máquina.
+Compile o JAR no sistema e só depois monte a imagem leve.
 
 ```bash
-# 1) só o banco (leve)
+# 1) banco
 docker compose -f docker-compose.prod.yml --env-file .env.prod up -d postgres
 
-# 2) build do backend (pode demorar 10–20 min; deixe rodando)
+# 2) compilar JAR (fora do Docker; 5–15 min na 1ª vez)
+bash deploy/build-backend.sh
+
+# 3) imagem leve do backend (só copia o JAR — rápido)
 docker compose -f docker-compose.prod.yml --env-file .env.prod build backend
 
-# 3) build do frontend
+# 4) frontend (sozinho)
 docker compose -f docker-compose.prod.yml --env-file .env.prod build frontend
 
-# 4) sobe tudo (sem rebuild)
+# 5) sobe tudo
 docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
 ```
 

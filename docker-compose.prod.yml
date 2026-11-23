@@ -21,7 +21,9 @@ services:
       - ljv
 
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.runtime
     container_name: ljv-backend
     restart: unless-stopped
     environment:
