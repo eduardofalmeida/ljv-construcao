@@ -1,11 +1,11 @@
 # Render não tem runtime Java. O serviço do backend precisa usar Language = Docker.
 FROM maven:3.9.9-eclipse-temurin-21 AS build
 WORKDIR /app
-# Limita RAM do Maven — VPS pequena trava sem isso
-ENV MAVEN_OPTS="-Xmx512m -XX:MaxMetaspaceSize=256m"
+# VPS 4GB: heap baixo; buildar backend sozinho (não junto com o frontend)
+ENV MAVEN_OPTS="-Xmx384m -XX:MaxMetaspaceSize=192m -Djava.awt.headless=true"
 COPY pom.xml .
 COPY src ./src
-RUN mvn -B -DskipTests -T 1C package
+RUN mvn -B -DskipTests package
 
 FROM eclipse-temurin:21-jre-jammy
 WORKDIR /app

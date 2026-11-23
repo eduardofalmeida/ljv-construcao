@@ -160,7 +160,11 @@ Resumo:
 
 ```bash
 cp .env.prod.example .env.prod   # ajuste a senha do Postgres
-docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+# Em VPS 4GB: criar swap e buildar backend/frontend um de cada vez
+# (ver deploy/locaweb-vps.md). Evite up -d --build na primeira vez.
+docker compose -f docker-compose.prod.yml --env-file .env.prod build backend
+docker compose -f docker-compose.prod.yml --env-file .env.prod build frontend
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
 ```
 
 Acesso: `http://www.ljvconstrucao.com.br` (ou `http://177.153.22.65`). Login inicial: `admin` / `admin123`.

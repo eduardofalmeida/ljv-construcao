@@ -33,18 +33,21 @@ ufw allow 80/tcp
 ufw --force enable
 ```
 
-### Swap (recomendado em VPS com pouca RAM)
+### Swap (obrigatório em VPS 4GB)
 
-Evita a máquina travar no build do Java:
+Sem swap o build do Java trava a máquina (SSH some).
 
 ```bash
-fallocate -l 2G /swapfile || dd if=/dev/zero of=/swapfile bs=1M count=2048
+swapoff /swapfile 2>/dev/null || true
+fallocate -l 4G /swapfile || dd if=/dev/zero of=/swapfile bs=1M count=4096
 chmod 600 /swapfile
 mkswap /swapfile
 swapon /swapfile
 grep -q '/swapfile' /etc/fstab || echo '/swapfile none swap sw 0 0' >> /etc/fstab
 free -h
 ```
+
+Tem que aparecer ~4G em `Swap` no `free -h` **antes** de qualquer `docker compose build`.
 
 ## 3. Clonar o projeto
 
@@ -66,17 +69,27 @@ nano .env.prod
 
 Troque `POSTGRES_PASSWORD` por uma senha forte. Salve (`Ctrl+O`, Enter, `Ctrl+X`).
 
-## 5. Subir a stack
+## 5. Subir a stack (um serviço por vez)
+
+**Não** use `up -d --build` na primeira vez — frontend e backend juntos estouram a RAM.
 
 ```bash
-docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+# 1) só o banco (leve)
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d postgres
+
+# 2) build do backend (pode demorar 10–20 min; deixe rodando)
+docker compose -f docker-compose.prod.yml --env-file .env.prod build backend
+
+# 3) build do frontend
+docker compose -f docker-compose.prod.yml --env-file .env.prod build frontend
+
+# 4) sobe tudo (sem rebuild)
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
 ```
 
-Aguarde o build (pode levar alguns minutos na primeira vez).
-
 ```bash
-docker compose -f docker-compose.prod.yml ps
-docker compose -f docker-compose.prod.yml logs -f --tail=80
+docker compose -f docker-compose.prod.yml --env-file .env.prod ps
+docker compose -f docker-compose.prod.yml --env-file .env.prod logs -f --tail=80
 ```
 
 ## 6. Acessar
