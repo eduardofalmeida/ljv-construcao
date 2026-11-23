@@ -163,7 +163,7 @@ cp .env.prod.example .env.prod   # ajuste a senha do Postgres
 docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
 ```
 
-Acesso pelo IP: `http://177.153.22.65` (login: `admin` / `admin123` na primeira subida).
+Acesso: `http://www.ljvconstrucao.com.br` (ou `http://177.153.22.65`). Login inicial: `admin` / `admin123`.
 
 ---
 

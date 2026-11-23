@@ -1,6 +1,18 @@
-# Deploy na VPS Locaweb (pelo IP)
+# Deploy na VPS Locaweb
 
-IP atual: `http://177.153.22.65`
+- IP: `http://177.153.22.65`
+- Domínio: `http://www.ljvconstrucao.com.br` / `http://ljvconstrucao.com.br`
+
+## DNS na Registro.br
+
+Em [registro.br](https://registro.br) → domínio → **DNS** / editar zona:
+
+| Tipo | Nome | Dados |
+|------|------|--------|
+| A | `@` (em branco / domínio) | `177.153.22.65` |
+| A | `www` | `177.153.22.65` |
+
+Salve e aguarde a propagação (minutos a algumas horas).
 
 ## 1. Entrar na VPS (no Mac)
 
@@ -56,9 +68,16 @@ docker compose -f docker-compose.prod.yml logs -f --tail=80
 
 ## 6. Acessar
 
-- Site: http://177.153.22.65  
-- Login: http://177.153.22.65/login  
+- Site: http://www.ljvconstrucao.com.br (ou http://177.153.22.65 enquanto o DNS propaga)
+- Login: http://www.ljvconstrucao.com.br/login  
 - Usuário inicial: `admin` / `admin123` (troque a senha depois)
+
+Depois de apontar o DNS, na VPS atualize o CORS no `.env.prod` e reinicie o backend:
+
+```bash
+# APP_CORS_ALLOWED_ORIGINS=http://www.ljvconstrucao.com.br,http://ljvconstrucao.com.br,http://177.153.22.65
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
+```
 
 ## Atualizar depois de um push no GitHub
 
