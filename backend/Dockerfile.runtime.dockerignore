@@ -1,0 +1,4 @@
+# Usado só pelo Dockerfile.runtime (BuildKit lê <Dockerfile>.dockerignore).
+# Diferente do .dockerignore padrão, aqui o JAR em target/ PRECISA entrar no contexto.
+*
+!target/construcao-0.0.1-SNAPSHOT.jar
